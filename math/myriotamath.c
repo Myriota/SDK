@@ -11,13 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Demonstrates putting the Myriota terminal in "sandbox" by overriding the
-// BoardStart() API. Also demonstrates how to control the LED.
-//
-// Sandbox mode is useful for development because system initialisation is
-// faster. Sandbox mode is not for deployment. In this mode the terminal will
-// not transmit data to satellite.
-
 #include "math/myriotamath.h"
 #include <stdio.h>
 
@@ -216,6 +209,11 @@ int myriota_buf_to_hex(const void *buf, const size_t buf_size, char *s) {
   return buf_size * 2;
 }
 
+void myriota_print_hex(const void *buf, int length) {
+  const uint8_t *b = (const uint8_t *)buf;
+  for (int i = 0; i < length; i++) printf("%02x", b[i]);
+}
+
 // converts integer in the range 0 - 63 to a base64 character.
 // Return -1 if n is out of range
 char myriota_number_to_base64(int n) {
@@ -383,21 +381,21 @@ int gcd(int a, int b) {
 }
 
 myriota_rational make_myriota_rational(int a, int b) {
-  int d = gcd(a, b);
-  myriota_rational ret = {a / d, b / d};
-  return ret;
+  const int d = gcd(a, b);
+  if (b < 0) return (myriota_rational){-a / d, -b / d};
+  return (myriota_rational){a / d, b / d};
 }
 
-// Gets around gcc's overzealous const
-// In my oppinion Clang get's this right and doesn't require this
-typedef struct {
-  int p;  // numerator
-  int q;  // denominator
-} myriota_mutable_rational;
-myriota_mutable_rational make_myriota_mutable_rational(int a, int b) {
-  int d = gcd(a, b);
-  myriota_mutable_rational ret = {a / d, b / d};
-  return ret;
+myriota_rational myriota_rational_sum(myriota_rational a, myriota_rational b) {
+  return make_myriota_rational(a.p * b.q + a.q * b.p, a.q * b.q);
+}
+
+int myriota_rational_compare(myriota_rational a, myriota_rational b) {
+  const int x = a.p * b.q;
+  const int y = b.p * a.q;
+  if (x > y) return 1;
+  if (x == y) return 0;
+  return -1;
 }
 
 static void private_best_approximations(const int *a, int hn1, int hn2, int kn1,
@@ -405,7 +403,7 @@ static void private_best_approximations(const int *a, int hn1, int hn2, int kn1,
                                         myriota_rational *r) {
   int hn = (*a) * hn1 + hn2;
   int kn = (*a) * kn1 + kn2;
-  *(myriota_mutable_rational *)r = make_myriota_mutable_rational(hn, kn);
+  *r = make_myriota_rational(hn, kn);
   if (size == 1) return;
   private_best_approximations(a + 1, hn, hn1, kn, kn1, size - 1, r + 1);
 }
@@ -415,7 +413,7 @@ void myriota_best_approximations(double x, unsigned int size,
   int a[size];
   // compute continued fraction expansion of x
   myriota_continued_fraction(x, size, a);
-  *(myriota_mutable_rational *)r = make_myriota_mutable_rational(*a, 1);
+  *r = make_myriota_rational(*a, 1);
   private_best_approximations(a + 1, *a, 1, 1, 0, size - 1, r + 1);
 }
 
@@ -868,4 +866,208 @@ void myriota_detect_sinusoid_inplace(myriota_complex *x, const unsigned int N,
   *frequency = myriota_fracpart(xhat);
   *residual_variance = fmax(0.0, sigma2 - Imax / N);
   *amplitude = periodogram_time_domain_v(xhat, x, N) / N;
+}
+
+void myriota_matrix_multiply(const int M, const int N, const int K,
+                             const double *A, const double *B, double *X) {
+  for (int m = 0; m < M; m++) {
+    for (int k = 0; k < K; k++) {
+      double x = 0;
+      for (int n = 0; n < N; n++) x += *(A + N * m + n) * *(B + K * n + k);
+      *(X + K * m + k) = x;
+    }
+  }
+}
+
+void myriota_matrix_transpose(const int M, const int N, const double *A,
+                              double *B) {
+  for (int m = 0; m < M; m++)
+    for (int n = 0; n < N; n++) *(B + M * n + m) = *(A + N * m + n);
+}
+
+#define swap(type, a, b) \
+  {                      \
+    const type t = a;    \
+    a = b;               \
+    b = t;               \
+  }
+
+#define comp_LU(M, N, A, LU, piv)                                     \
+  {                                                                   \
+    for (int m = 0; m < M; m++)                                       \
+      for (int n = 0; n < N; n++) LU[m][n] = *(A + N * m + n);        \
+                                                                      \
+    for (int i = 0; i < M; i++) piv[i] = i;                           \
+    double pivsign = 1.0;                                             \
+                                                                      \
+    for (int k = 0; k < N; k++) {                                     \
+      int p = k;                                                      \
+      for (int i = k + 1; i < M; i++)                                 \
+        if (fabs(LU[i][k]) > fabs(LU[p][k])) p = i;                   \
+                                                                      \
+      if (p != k) {                                                   \
+        for (int j = 0; j < N; j++) swap(double, LU[p][j], LU[k][j]); \
+        swap(int, piv[p], piv[k]);                                    \
+        pivsign = -pivsign;                                           \
+      }                                                               \
+      if (LU[k][k] != 0.0) {                                          \
+        for (int i = k + 1; i < M; i++) {                             \
+          LU[i][k] = LU[i][k] / LU[k][k];                             \
+          for (int j = k + 1; j < N; j++)                             \
+            LU[i][j] = LU[i][j] - LU[i][k] * LU[k][j];                \
+        }                                                             \
+      }                                                               \
+    }                                                                 \
+  }
+
+int myriota_matrix_lu(const int M, const int N, const double *A, double *L,
+                      double *U, int *piv) {
+  if (M < N) return -1;
+
+  double LU[M][N];
+  comp_LU(M, N, A, LU, piv);
+
+  // set L
+  for (int m = 0; m < M; m++)
+    for (int n = 0; n < m; n++) *(L + N * m + n) = LU[m][n];  // lower
+  for (int n = 0; n < N; n++) *(L + N * n + n) = 1.0;         // diagonal is 1
+  for (int m = 0; m < M; m++)
+    for (int n = m + 1; n < N; n++) *(L + N * m + n) = 0.0;  // upper zeros
+
+  // set U
+  for (int m = 0; m < N; m++)
+    for (int n = 0; n < m; n++) *(U + N * m + n) = 0.0;  // lower zeros
+  for (int m = 0; m < N; m++)
+    for (int n = m; n < N; n++) *(U + N * m + n) = LU[m][n];  // upper
+
+  return 0;
+}
+
+int myriota_matrix_solve(const int N, const int K, const double *A,
+                         const double *Y, double *X) {
+  double LU[N][N];
+  int piv[N];
+  comp_LU(N, N, A, LU, piv);
+
+  // check if this matrix is singular
+  const double eps = 3e-16;
+  for (int n = 0; n < N; n++)
+    if (fabs(LU[n][n]) < eps) return -1;
+
+  // Copy NxK Y to pX with pivot
+  double pX[N][K];
+  for (int n = 0; n < N; n++)
+    for (int k = 0; k < K; k++) pX[n][k] = *(Y + K * piv[n] + k);
+
+  // Solve LZ = Y(piv,:)
+  for (int k = 0; k < N; k++)
+    for (int i = k + 1; i < N; i++)
+      for (int j = 0; j < K; j++) pX[i][j] -= pX[k][j] * LU[i][k];
+
+  // Solve UX = Z
+  for (int k = N - 1; k >= 0; k--) {
+    for (int j = 0; j < K; j++) pX[k][j] /= LU[k][k];
+    for (int i = 0; i < k; i++)
+      for (int j = 0; j < K; j++) pX[i][j] -= pX[k][j] * LU[i][k];
+  }
+
+  // copy result
+  for (int n = 0; n < N; n++)
+    for (int k = 0; k < K; k++) *(X + K * n + k) = pX[n][k];
+
+  return 0;
+}
+
+void myriota_matrix_print(const int M, const int N, const double *A, FILE *f) {
+  for (int m = 0; m < M; m++) {
+    for (int n = 0; n < N; n++) fprintf(f, "%f ", *(A + N * m + n));
+    fprintf(f, "\n");
+  }
+}
+
+void myriota_polyfit(const double *t, const double *x, const int N, const int r,
+                     double *a) {
+  double T[N][r + 1];
+  for (int n = 0; n < N; n++)
+    for (int i = 0; i <= r; i++) T[n][i] = pow(t[n], i);
+  double Tt[r + 1][N];
+  myriota_matrix_transpose(N, r + 1, &T[0][0], &Tt[0][0]);
+  double TtT[r + 1][r + 1];
+  myriota_matrix_multiply(r + 1, N, r + 1, &Tt[0][0], &T[0][0], &TtT[0][0]);
+  double Tx[r + 1];
+  myriota_matrix_multiply(r + 1, N, 1, &Tt[0][0], x, Tx);
+  myriota_matrix_solve(r + 1, 1, &TtT[0][0], Tx, a);
+}
+
+unsigned int myriota_tlv_size(const void *tlv,
+                              unsigned int (*size)(const void *)) {
+  if (tlv == NULL) return 0;
+  unsigned int s = size(tlv);
+  while ((tlv = myriota_tlv_next(tlv, size))) s += size(tlv);
+  return s;
+}
+
+unsigned int myriota_tlv_count(const void *tlv,
+                               unsigned int (*size)(const void *)) {
+  if (tlv == NULL) return 0;
+  if (size(tlv) == 0) return 0;
+  unsigned int s = 1;
+  while ((tlv = myriota_tlv_next(tlv, size))) s++;
+  return s;
+}
+
+unsigned int myriota_tlv_count_find(const void *tlv,
+                                    unsigned int (*size)(const void *),
+                                    bool (*find)(const void *, void *),
+                                    void *find_state) {
+  unsigned int c = 0;
+  while ((tlv = myriota_tlv_find(tlv, size, find, find_state))) {
+    c++;
+    tlv = myriota_tlv_next(tlv, size);
+  }
+  return c;
+}
+
+void *myriota_tlv_next(const void *tlv, unsigned int (*size)(const void *)) {
+  if (tlv == NULL) return NULL;
+  if (size(tlv) == 0) return NULL;
+  void *next = (uint8_t *)tlv + size(tlv);
+  if (size(next) == 0) return NULL;
+  return next;
+}
+
+int myriota_tlv_append(void *tlv, const void *a,
+                       unsigned int (*size)(const void *),
+                       void (*end)(void *)) {
+  if (tlv == NULL) return -1;
+  if (a == NULL) return -1;
+  if (size(a) == 0) return -1;
+  const unsigned int ts = myriota_tlv_size(tlv, size);
+  const unsigned int as = size(a);
+  memmove((uint8_t *)tlv + ts, a, as);
+  end((uint8_t *)tlv + ts + as);
+  return 0;
+}
+
+int myriota_tlv_delete(void *tlv, void *d, unsigned int (*size)(const void *),
+                       void (*end)(void *)) {
+  if (tlv == NULL) return -1;
+  do {  // find d in tlv
+    if (d == tlv) break;
+  } while ((tlv = myriota_tlv_next(tlv, size)));
+  if (tlv == NULL) return -1;  // d iss not in tlv
+  void *n = myriota_tlv_next(d, size);
+  const unsigned int sn = myriota_tlv_size(n, size);
+  memmove(d, n, sn);
+  end((uint8_t *)d + sn);
+  return 0;
+}
+
+void *myriota_tlv_find(const void *tlv, unsigned int (*size)(const void *),
+                       bool (*find)(const void *, void *), void *find_state) {
+  if (tlv == NULL) return NULL;
+  do {  // find d in tlv
+    if (find(tlv, find_state)) return (void *)tlv;
+  } while ((tlv = myriota_tlv_next(tlv, size)));
+  return NULL;
 }

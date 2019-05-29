@@ -64,7 +64,7 @@ def capture_bootloader(ser):
         line = ser.readline()
         out = line
         if b'Bootloader' in line:
-            print('\n', line)
+            print('\n')
             ser.readline()
             break
         if line is not None:
@@ -219,6 +219,14 @@ def get_regcode(ser):
     out += ser.readline()
     print(out.decode('utf-8'))
 
+def get_version(ser):
+    ser.write(b'V')
+    ser.flush()
+    out = b''
+    ser.readline()
+    out += ser.readline()
+    print(out.decode('utf-8'))
+
 ser = None
 
 
@@ -234,7 +242,7 @@ def main():
     parser.add_argument("-f", "--system_image", dest='system_image_name',
                         help='system image FILE to update with', metavar='FILE')
     parser.add_argument("-u", "--user_app", dest='user_app_name',
-                        help='uaer application FILE to update with', metavar='FILE')
+                        help='user application FILE to update with', metavar='FILE')
     parser.add_argument('-r', '--raw', nargs=2, dest='raw_commands',
                         action='append', metavar=('raw_command', 'FILE'),
                         help='use raw command and FILE pair to update, can have multiple')
@@ -249,6 +257,9 @@ def main():
     parser.add_argument('-c', '--regcode', dest='get_regcode_flag', action='store_true',
                         default=False,
                         help='get registration code')
+    parser.add_argument('-v', '--version', dest='get_version_flag', action='store_true',
+                        default=False,
+                        help='get bootloader version (only support 0.9.0 or later)')
     args = parser.parse_args()
     if args.portname == 'None':
         parser.error("Please specify the serial port.")
@@ -264,6 +275,10 @@ def main():
 
     if args.get_regcode_flag:
         get_regcode(serial_port)
+        sys.exit(0)
+
+    if args.get_version_flag:
+        get_version(serial_port)
         sys.exit(0)
 
     update_commands = []

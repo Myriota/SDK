@@ -18,43 +18,103 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-// Carrier board specific implementation of the board support package
+/// @defgroup BSP_api BSP API
+/// Board specific implementation of the board support package (BSP).
+/// <a
+/// href="https://github.com/Myriota/SDK/blob/master/terminal/g2/boards/MyriotaDB/bsp.c">Myriota
+/// development board BSP</a>
+///  is used by default.
+/// @{
 
-/// Board initialisation
-// Board initialisation before any system hardware initialisation, invoked
-// only once at startup
+/// Compile time check
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2 * !!(condition)]))
+
+/// @defgroup Board_env Board-specific environment
+/// @{
+
+/// Get board-specific environment variables
+/// Returns string which contains semicolon separated variables.
+/// - GNSSFIX
+///     - 0: skip system GNSS fix
+///     - unset: do system GNSS fix
+///     .
+/// - DUMPTX
+///     - 1: dump transmission information
+///     - 0 or unset: don't dump
+///     .
+/// .
+#define BOARD_ENV_LEN_MAX 50
+char *BoardEnvGet(void);
+
+/// @}
+
+/// @defgroup Board_init Board initialisation
+/// @{
+
+/// Initialise the board before any system hardware initialisation, invoked
+/// only once at startup.
+/// Returns 0 if succeeded and -1 if failed.
 int BoardInit(void);
-// Board initialisation after the system hardware initialisation, invoked only
-// once at startup
-// Can be overriden if you only want to change how the system indicates it
-// has started
+/// Initialise the board after the system hardware initialisation, invoked only
+/// once at startup. Can be overriden by your application code individually.
+/// Returns 0 if succeeded and -1 if failed.
 int BoardStart(void);
 
-/// Battery
-// Get the battery voltage in mv
-// Returns 0 if succeeded and -1 if failed
-// 0mv if battery measurement is not supported and returns success
+/// @}
+
+/// @defgroup Board_battery Battery voltage reading
+/// @{
+
+/// Get the battery voltage in millivolt.
+/// Returns 0 if succeeded and -1 if failed.
+/// If battery measurement is not supported then both voltage and the return
+/// value should be 0.
 int BoardBatteryVoltGet(uint32_t *mv);
 
-/// LED
+/// @}
+
+/// @defgroup Board_led LED control
+/// @{
+
+/// Control the LED for system status indication.
 void BoardLEDInit(void);
 void BoardLEDDeinit(void);
 void BoardLEDTurnOn(void);
 void BoardLEDTurnOff(void);
 void BoardLEDToggle(void);
 
-/// GPS
+/// @}
+
+/// @defgroup Board_gnss GNSS module power control
+/// @{
+
 void BoardGNSSPowerEnable(void);
 void BoardGNSSPowerDisable(void);
+/// Returns true if enabled and false if disabled.
 bool BoardGNSSPowerIsEnabled(void);
 
-/// RADIO
+/// @}
+
+/// @defgroup Board_radio Satellite radio antenna control
+/// @{
+
+/// Select the antenna based on satellite radio mode and frequency band.
 typedef enum { RADIO_BAND_VHF, RADIO_BAND_UHF, RADIO_BAND_ISM } RadioBand;
+/// Returns 0 if succeeded and -1 if failed.
 int BoardAntennaSelect(bool IsTx, RadioBand Band);
 
-/// UART debug
+/// @}
+
+/// @defgroup Board_debug Debug output
+/// @{
+
 void *BoardDebugInit(void);
 void BoardDebugDeinit(void);
+/// Returns 0 if all bytes are sent and -1 if not.
 int BoardDebugWrite(const uint8_t *Tx, size_t Length);
+
+/// @}
+
+/// @}
 
 #endif  // MYRIOTA_BSP_H

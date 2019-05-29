@@ -17,11 +17,10 @@ include $(ROOTDIR)/terminal/orbit_model.mk
 
 LIB_DIR:=$(ROOTDIR)/terminal/sim
 LIBS:=$(LIB_DIR)/sim.so
-OBJ_LIST += $(orbit_model).o
+OBJ_LIST+=$(orbit_model).o
 
-$(PROGRAM_NAME) : $(LIBS) $(OBJ_LIST)
+$(PROGRAM_NAME) : $(OBJ_LIST) $(LIBS)
 	$(CC) $(OBJ_LIST) $(LIBS) $(LDFLAGS) -o $@
-	@rm $(ORBIT_MODEL) $(orbit_model).c $(orbit_model).o
 
 clean:
 	rm -f $(OBJ_LIST) $(PROGRAM_NAME)

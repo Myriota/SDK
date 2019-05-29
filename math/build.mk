@@ -21,8 +21,6 @@ MATH_SRC := $(call allsourceindirs,$(MATH_SRC_DIR) ,$(ASMEXT) $(CEXT) $(CPPEXT))
 MATH_OBJECTS:=$(patsubst %,$(MATH_BUILD_DIR)%.o,$(MATH_SRC))
 
 ## Build static myriotamath library
-myriotamath.a: CFLAGS+=-O3
-myriotamath.a: CXXFLAGS+=-O3
 myriotamath.a : $(MATH_OBJECTS)
 	ar rcs $@ $(MATH_OBJECTS)
 

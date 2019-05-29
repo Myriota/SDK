@@ -39,7 +39,6 @@ int main(int argc, char **argv) {
   // Get input/output type and check if conversion necessary
   const std::string input_type = cmd_parser.get<std::string>("from");
   const std::string output_type = cmd_parser.get<std::string>("to");
-
   const bool exit_on_clip = cmd_parser.exist("exit-on-clip");
 
   // assign function to read samples from file
@@ -60,11 +59,10 @@ int main(int argc, char **argv) {
     read_sample = read_sample_of_type<int32_t>;
   else {
     std::cerr << "Input type must be one of double, float, uint8, int8, int16, "
-                 "uint16, "
-                 "or int32"
+                 "uint16, or int32"
               << std::endl;
     std::cerr << cmd_parser.usage();
-    exit(0);
+    return EXIT_FAILURE;
   }
 
   // assign function to write sample to stdout
@@ -89,14 +87,13 @@ int main(int argc, char **argv) {
            "int32"
         << std::endl;
     std::cerr << cmd_parser.usage();
-    exit(0);
+    return EXIT_FAILURE;
   }
 
   // the actual conversion loop
   complex sample;
-  bool clipped;
   while (read_sample(stdin, sample)) {
-    clipped = print_sample(stdout, sample);
+    const bool clipped = print_sample(stdout, sample);
     if (exit_on_clip && clipped) return EXIT_FAILURE;
   }
 

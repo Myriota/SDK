@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include "bsp.h"
-#include "module_pindefs.h"
 #include "myriota_hardware_api.h"
 #include "myriota_user_api.h"
 
@@ -26,6 +25,17 @@
 #define MODULE_BAND_PIN PIN_BAND
 
 static void *DebugHandle;
+
+#ifdef LAB_TEST
+#define BOARD_ENV "GNSSFIX=0;DUMPTX=1"
+#else
+#define BOARD_ENV ""
+#endif
+
+__attribute__((weak)) char *BoardEnvGet() {
+  BUILD_BUG_ON(sizeof(BOARD_ENV) > BOARD_ENV_LEN_MAX);
+  return BOARD_ENV;
+}
 
 int BoardInit(void) {
   BoardLEDDeinit();
@@ -65,8 +75,12 @@ int BoardBatteryVoltGet(uint32_t *mv) {
 
   uint32_t batt = 0, volt = 0;
   for (unsigned i = 0; i < AVERAGE_COUNT; i++) {
-    // The output clips if the battery voltage is higher than VIO_REF
-    if (ADCGetVoltage(ADCPin, ADC_REF_VIO, &batt)) {
+    ADCReference Ref;
+    if (IsRev1)
+      Ref = ADC_REF_VIO;  // May clip if battery voltage is higher than VIO
+    else
+      Ref = ADC_REF_2V5;  // Battery voltage won't be higher than 5V
+    if (ADCGetVoltage(ADCPin, Ref, &batt)) {
       printf("Failed to get battery voltage\n");
       GPIOSetModeInput(ControlPin, GPIO_PULL_DOWN);
       return -1;

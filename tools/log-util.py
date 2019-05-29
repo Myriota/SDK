@@ -22,7 +22,7 @@ import serial
 import argparse
 import binascii
 
-errors = {0:  'Brownout reset',
+errors = {0:  'Internal test',
           1:  'Factory reset',
           2:  'Watchdog reset',
           3:  'System states',
@@ -35,6 +35,7 @@ errors = {0:  'Brownout reset',
           10: 'Stack overflow'}
 
 unpack_strings = {
+    'Internal test':'<II',
     'Watchdog reset': '<II',
     'System states': '<IIIIIIIIIIII',
     'MCU faults': '<IIII',
@@ -45,6 +46,7 @@ unpack_strings = {
 }
 
 contents = {
+    'Internal test': ['Test1', 'Test2'],
     'Watchdog reset': ['LastJobId', 'Timeout counter'],
     'System states':
         ['Number of transmissions', 'Wakeup times',

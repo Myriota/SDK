@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2019, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -12,9 +12,17 @@
 # limitations under the License.
 
 
-PROGRAM_NAME = tracker
+PROGRAM_NAME = pulse_counter
 
 ROOTDIR ?= $(abspath ../..)
 
-OBJ_LIST=main.o
+OBJ_LIST = main.o
+
+ifeq (sim, $(notdir $(PLATFORM)))
+	OBJ_LIST+=sim.o
+endif
+
 include $(ROOTDIR)/terminal/app.mk
+
+clean:
+	rm -f *.o map.out *.bin *.elf

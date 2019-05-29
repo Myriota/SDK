@@ -14,8 +14,11 @@
 # limitations under the License.
 
 
-# Unpacker for the tracker example. Only supports python 2. Usage:
+# Unpacker for the tracker example.
+# Usage:
 # unpack.py -x 0000aea02feb06fe9d52b89f3e5ccccccccccccccc
+# or
+# echo "0000aea02feb06fe9d52b89f3e5ccccccccccccccc" | unpack.py
 
 import argparse
 import struct
@@ -31,7 +34,7 @@ if __name__ == "__main__":
         description="Unpack hexadecimal data from tracker example.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-x', '--hex', type=str, default="-",
-                        help='Packet data in hexadecimal format or - to read from stdin')
+                        help='Packet data in hexadecimal format')
     args = parser.parse_args()
 
     d = []

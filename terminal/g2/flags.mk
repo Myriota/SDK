@@ -14,6 +14,6 @@
 ##Default c compiler and flags
 CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
-CFLAGS = -Wall -Werror -mcpu=cortex-m4 -mthumb -ffunction-sections -fdata-sections -fomit-frame-pointer -g -I$(ROOTDIR) -I$(ROOTDIR)/terminal/include -I. -I$(ROOTDIR)/terminal/$(PLATFORM)/include -std=gnu99 -DBOARD=$(BOARD)
+CFLAGS = -Wall -Werror -mcpu=cortex-m4 -mthumb -ffunction-sections -fdata-sections -fomit-frame-pointer -Os -I$(ROOTDIR) -I$(ROOTDIR)/terminal/include -I. -I$(ROOTDIR)/terminal/$(PLATFORM)/include -std=gnu99 -DBOARD=$(BOARD)
 LDSCRIPT =$(ROOTDIR)/terminal/g2/ldscript/APP.ld
 LDFLAGS = -Wl,-no-wchar-size-warning -Wl,-Map=map.out -Wall -Werror -mcpu=cortex-m4 -mlittle-endian -mthumb -fdata-sections -ffunction-sections -T$(LDSCRIPT) -lm -Wl,--gc-sections -Xlinker -static -specs=nano.specs -u _printf_float -u _scanf_float

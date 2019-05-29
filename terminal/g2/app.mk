@@ -24,22 +24,20 @@ PROGRAM_NAME_ELF:=$(PROGRAM_NAME).elf
 BSP_PATH:=$(ROOTDIR)/terminal/g2/boards/$(BOARD)
 
 ifeq ($(SATELLITES),Lab)
-LDFLAGS += -Wl,--defsym=UseDefaultGNSSLocation=1
+CFLAGS +=-DLAB_TEST
 endif
 
 LIB_DIR:=$(ROOTDIR)/terminal/g2
 LIBS:=$(LIB_DIR)/user_app_lib.a
 
-OBJ_LIST += $(orbit_model).o
-OBJ_LIST += $(BSP_PATH)/bsp.o
+OBJ_LIST += $(orbit_model).o $(BSP_PATH)/bsp.o
 
-$(PROGRAM_NAME) : $(PROGRAM_NAME_BIN)
-	rm $(ORBIT_MODEL) $(orbit_model).c $(orbit_model).o
+$(PROGRAM_NAME): $(PROGRAM_NAME_BIN)
 
-$(PROGRAM_NAME_BIN) :$(PROGRAM_NAME_ELF)
+$(PROGRAM_NAME_BIN): $(PROGRAM_NAME_ELF)
 	arm-none-eabi-objcopy -O binary $< $@
 
-$(PROGRAM_NAME_ELF) : $(LIBS) $(OBJ_LIST)
+$(PROGRAM_NAME_ELF): $(LIBS) $(OBJ_LIST)
 	$(CC) $(OBJ_LIST) -Wl,--whole-archive $(LIBS) $(LDFLAGS) -Wl,--no-whole-archive -o $@
 
 # Specify the serial port using the -p option if it is different from the default port

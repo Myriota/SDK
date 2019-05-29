@@ -11,32 +11,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 # Satellites to be used
-SATELLITES?=43215
+SATELLITES?=43215 SKA
 
-# orbit model url
-orbitmodelurl:=https://static.myriota.com/access_nodes/r0
-
-$(SATELLITES): .FORCE
-	curl -Of $(orbitmodelurl)/$@ || echo "Invalid satellite"
-
-ifndef ORBIT_MODEL
-ORBIT_MODEL:=$(shell mktemp)
-$(ORBIT_MODEL) : $(SATELLITES)
-	cat $(SATELLITES) > $@
-	rm -f $(SATELLITES)
-else
-$(ORBIT_MODEL) :
+ifeq (SATELLITES, "")
+	SATELLITES:=/dev/null
 endif
 
-orbit_model:=$(ORBIT_MODEL)_SRC
+.PHONY: $(SATELLITES)
+$(SATELLITES):
+	curl -f https://static.myriota.com/access_nodes/r2/$@ --output $@ || \
+		([ -e $@ ] && echo "Using old satellite $@") || \
+		(echo "\e[33mError: Satellite $@ not found\e[0m"; exit 1)
 
-## create orbit_model.c source with updated orbit model
-$(orbit_model).c: $(ORBIT_MODEL)
-	printf "static const char *hex = \"" > $@
-	cat $(ORBIT_MODEL) | xxd -p | tr -d \\n >> $@
-	printf "\";\n\n" >> $@
-	printf "const char* orbit_model() { return hex; }\n" >> $@
+orbit_model:=$(shell mktemp)
 
-.FORCE:
+# create orbit_model.c source with updated orbit models
+$(orbit_model).c: $(SATELLITES)
+	printf "#include <inttypes.h>\n" > $@
+	printf "const uint8_t* BuiltinAccessNodeGet() { static const uint8_t b[] = {" >> $@
+	cat $^ | xxd -i | tr -d \\n >> $@
+	printf "}; return b; }" >> $@

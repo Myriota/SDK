@@ -133,7 +133,7 @@ class Auth(object):
         self.refresh_before_expiry = 300
         self.tokens = {'IdToken': None, 'AccessToken': None, 'RefreshToken': None, 'ExpiresIn': None}
 
-    def username(self, prompt="User: "):
+    def username(self, prompt="Device manager username: "):
         sys.stderr.write(prompt)
         try:
             # Try python2 first
@@ -238,7 +238,7 @@ if __name__ == '__main__':
 
     parser_a = subparsers.add_parser('login')
     parser_a.add_argument('-u', '--user', type=str, default=None,
-      help='User. If not provided you will be prompted.')
+      help='Device manager username. If not provided you will be prompted.')
     parser_a.add_argument('-r', '--request_token', action="store_true",
       help='Print the refresh token to stdout.')
 

@@ -35,6 +35,8 @@
 #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2 * !!(condition)]))
 #endif
 
+#define field_size(type, member) sizeof(((type *)0)->member)
+
 // Get number of element in an array
 #define NUM_ELEMS(array) (sizeof(array) / sizeof((array)[0]))
 
@@ -60,13 +62,13 @@ extern "C" {
 
 // Print error function, line, message and then exit
 #ifndef error_message_and_exit
-#define error_message_and_exit(message)                              \
-  do {                                                               \
-    fprintf(stderr, "\n!!%s %d: %s\n", __func__, __LINE__, message); \
-    fflush(stderr);                                                  \
-    while (1) {                                                      \
-      exit(EXIT_FAILURE);                                            \
-    }                                                                \
+#define error_message_and_exit(message)                            \
+  do {                                                             \
+    fprintf(stderr, "!!%s %d: %s\n", __func__, __LINE__, message); \
+    fflush(stderr);                                                \
+    while (1) {                                                    \
+      exit(EXIT_FAILURE);                                          \
+    }                                                              \
   } while (0)
 #endif
 
@@ -160,6 +162,9 @@ int myriota_n_hex_to_buf(const char *s, const size_t n, void *buf);
 // allocated with size at least 2*buf_size+1. Returns number of hexidecimal
 // characters written
 int myriota_buf_to_hex(const void *buf, const size_t buf_size, char *s);
+
+// Print buffer to standard out in hex format
+void myriota_print_hex(const void *buf, int size_bytes);
 
 // Parses a base64 string into a buffer of bytes.
 // The length of s (i.e. strlen(s)) must be a multiple of 4. Returns the number
@@ -257,7 +262,17 @@ int myriota_int_array_arg_max(const int *S, unsigned int numS);
 int myriota_int_mod(int x, int y);
 long myriota_long_mod(long x, long y);
 
-// Generate a random uniform on the interval [0,1]
+// Ceiling after division of nonegative integer a by nonnegative integer b
+static inline unsigned int myriota_int_div_ceil(unsigned int a,
+                                                unsigned int b) {
+  return a / b + (a % b != 0);
+}
+static inline unsigned long myriota_long_div_ceil(unsigned long a,
+                                                  unsigned long b) {
+  return a / b + (a % b != 0);
+}
+
+// Number uniformly distributed on the interval [0,1]
 static inline double myriota_random_uniform() {
   return ((double)rand()) / RAND_MAX;
 }
@@ -281,16 +296,22 @@ double myriota_continued_fraction(double x, unsigned int size, int *r);
 int gcd(int a, int b);
 
 typedef struct {
-  const int p;  // numerator
-  const int q;  // denominator
+  int p;  // numerator
+  int q;  // denominator
 } myriota_rational;
 
 // construct rational number equivalent to a/b. Numerator and denominator
 // of resulting rational will always be relatively prime.
 myriota_rational make_myriota_rational(int a, int b);
 
-// Return first size best rational approximations to decimal x
-// Output written into b
+// The sum of two rational numbers
+myriota_rational myriota_rational_sum(myriota_rational a, myriota_rational b);
+
+// Return 1 if a > b, -1 if a < b, and 0 if a == b
+int myriota_rational_compare(myriota_rational a, myriota_rational b);
+
+// Return first size best rational approximations to decimal x. Output written
+// into b
 void myriota_best_approximations(double x, unsigned int size,
                                  myriota_rational *b);
 
@@ -302,7 +323,7 @@ myriota_rational myriota_rational_approximation(double x, double tol, int qmax,
 // Search for a zero of the function f(x) in the interval [a, b]. Finds a
 // solution x such that |x0 - x| < tol where f(x0) = 0. Uses the bisection
 // method, only guaranteed to converge if there is a unique zero between a and
-// b and f is continuous and sign(f(a)) = - sign(f(b))
+// b and f is continuous and sign(f(a)) = -sign(f(b))
 //
 // Example usage:
 //
@@ -434,6 +455,64 @@ void myriota_detect_sinusoid_inplace(myriota_complex *x, const unsigned int N,
                                      myriota_complex *amplitude,
                                      myriota_decimal *residual_variance,
                                      myriota_decimal *confidence);
+
+// Multiply MxN matrix A by N by K matrix B producing M by K matrix X.
+// Matrices are assumed flattened rowise, that is, one row after the next.
+void myriota_matrix_multiply(const int M, const int N, const int K,
+                             const double *A, const double *B, double *X);
+
+// Find N by K matrix X such that AX = Y where A is a non-singular N by N matrix
+// and Y is an N by K matrix.
+int myriota_matrix_solve(const int N, const int K, const double *A,
+                         const double *Y, double *X);
+
+// Return transpose of matrix A into B.
+void myriota_matrix_transpose(const int M, const int N, const double *A,
+                              double *B);
+
+// LUP decomposition of M by N matrix A. Returns M by N matrix L, permutation
+// vector p of length M, and N by N matrix U such that permuting the rows of A
+// by p results in the matrix LU, that is, results in the multiplication of
+// matrix L by matrix U. Requires M >= N. Returns -1 if this is not the case.
+// Returns 0 on success.
+int myriota_matrix_lu(const int M, const int N, const double *A, double *L,
+                      double *U, int *p);
+
+void myriota_matrix_print(const int M, const int N, const double *A, FILE *f);
+
+// Least sequare fit polynomial a[0] + a[1] t + a[2] t^2 + ... a[r-1] t^r of
+// order r to data x. Both tand x assumed to be arrays of length N.
+void myriota_polyfit(const double *t, const double *x, const int N, const int r,
+                     double *a);
+
+// Generic function for type, length, value data structures. These functions
+// require two functions, int size(void*) that returns the size (or length) in
+// bytes of an element, and void end(void*) that write a terminating value. The
+// size of the terminating value must be zero.
+// Return next element in type, length, value sequence. Returns NULL if next
+// element does not exist.
+void *myriota_tlv_next(const void *tlv, unsigned int (*size)(const void *));
+// Append an element to a type length value sequence, Returns -1 on fail, 0 on
+// success.
+int myriota_tlv_append(void *tlv, const void *a,
+                       unsigned int (*size)(const void *), void (*end)(void *));
+// Delete an element. Return -1 if the element does not exist, 0 on success.
+int myriota_tlv_delete(void *tlv, void *d, unsigned int (*size)(const void *),
+                       void (*end)(void *));
+// Return total size of sequence
+unsigned int myriota_tlv_size(const void *tlv,
+                              unsigned int (*size)(const void *));
+// Return total number of element
+unsigned int myriota_tlv_count(const void *tlv,
+                               unsigned int (*size)(const void *));
+// Find an element in a sequnece. Returns NULL if the element cannot be found.
+void *myriota_tlv_find(const void *tlv, unsigned int (*size)(const void *),
+                       bool (*find)(const void *, void *), void *find_state);
+// Count the number of elements that satisfy a boolean valued function
+unsigned int myriota_tlv_count_find(const void *tlv,
+                                    unsigned int (*size)(const void *),
+                                    bool (*find)(const void *, void *),
+                                    void *find_state);
 
 #ifdef __cplusplus
 }

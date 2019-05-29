@@ -16,43 +16,29 @@
 
 import argparse
 import os
-
+import sys
 import requests
+import myriota_auth
 
-import auth
-
-_domain = "https://api.myriota.com/v1/release"
-
-help_description = """
-Script which will download the latest SDK
-"""
-
-def authenticate(user):
-
-    authenticator = auth.Auth()
-    authenticator.login(user)
-
-    return authenticator.id_token
+__domain = "https://api.myriota.com/v1/release"
 
 def get_download_url(id_token, file_key):
 
-    url = "%s/%s" % (_domain, file_key)
+    url = "%s/%s" % (__domain, file_key)
     response = requests.get(url, headers={"Authorization": id_token})
-
     if response.status_code != 200:
         raise ValueError(response.text)
     return response.text
 
 def download_file(url, output):
-
     response = requests.get(url)
+    response.raise_for_status()
     open(output, 'wb').write(response.content)
 
 def main(argv=None):
     """Implements main CLI entrypoint"""
 
-    parser = argparse.ArgumentParser(description=help_description)
-
+    parser = argparse.ArgumentParser(description='Download the SDK binaries')
     parser.add_argument(
         'filename', type=str, default=None,
         help='File to download from the SDK bucket.'
@@ -61,15 +47,9 @@ def main(argv=None):
         '-o', '--output', type=str, default=None, required=False,
         help='Output to this file instead of the filename in the current directory'
     )
-    parser.add_argument(
-        '-u', '--user', type=str, default=None,
-        help='User. If not provided you will be prompted.'
-    )
-
     args = parser.parse_args(argv)
 
-    token = authenticate(args.user)
-
+    token = myriota_auth.auth()['IdToken']
     s3_url = get_download_url(token, args.filename)
 
     # If output is not provided, use the original filename
@@ -77,7 +57,18 @@ def main(argv=None):
         output = os.path.basename(args.filename)
     else:
         output = args.output
-    download_file(s3_url, output)
+
+    try:
+        download_file(s3_url, output)
+    # Handle http errors from s3 download
+    except requests.exceptions.HTTPError as e:
+        if (e.response.status_code >= 500):
+            print("Server error")
+            print(e)
+            sys.exit(1)
+        elif (e.response.status_code >= 400):
+            print("File does not exist")
+            sys.exit(2)
 
 if __name__ == "__main__":
     main()

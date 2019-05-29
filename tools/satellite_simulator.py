@@ -231,23 +231,14 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description=SatelliteSimulator.__doc__)
-    auth_methods = parser.add_mutually_exclusive_group()
-    auth_methods.add_argument('-u', '--user', type=str, default=None, metavar='USER',
-      help='User (typically an email address). If not provided you will be prompted.')
-    auth_methods.add_argument('-r', '--refresh-token', type=str, default=None, metavar='TOKEN',
-      help='Refresh token used to obtain new session tokens.')
     parser.add_argument('-d', '--duration', type=float, default=0,
       help='Duration of the simulation in seconds. Runs indefinitely if set to zero (default).')
-
     args = parser.parse_args()
 
     simulator = SatelliteSimulatorAuth()
     try:
         simulator.check_dongle()
-        if args.refresh_token is not None:
-            simulator.refresh_tokens(args.refresh_token)
-        else:
-            simulator.login(args.user)
+        simulator.login()
         capture = simulator.start_capture(duration=args.duration)
         simulator.process_capture(capture)
     except KeyboardInterrupt as e:

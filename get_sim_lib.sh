@@ -13,13 +13,13 @@
 # limitations under the License.
 
 
-remote_system_image_name=system_image_$(sed 's/\r//g;s/\./_/g' VERSION).bin
-local_system_image_name=system.img
+remote_sim_lib_name=sim_$(sed 's/\r//g;s/\./_/g' VERSION).so
+local_sim_lib_name=terminal/sim/sim.so
 
 set -e
-rm -f ${local_system_image_name}
-tools/myriota_download.py -o ${local_system_image_name} ${remote_system_image_name}
-echo "${local_system_image_name} for SDK $(sed 's/\r//g' VERSION) has been downloaded."
+rm -f ${local_sim_lib_name}
+tools/myriota_download.py -o ${local_sim_lib_name} ${remote_sim_lib_name}
+echo "${local_sim_lib_name} for SDK $(sed 's/\r//g' VERSION) has been downloaded."
 echo 'This file and the related binary are licensed under the Permissive Binary License, Version 1.0 (the "License"); you may not use these files except in compliance with the License.'
 echo 'You may obtain a copy of the License here: LICENSE-permissive-binary-license-1.0.txt and at https://www.mbed.com/licenses/PBL-1.0'
 echo 'See the License for the specific language governing permissions and limitations under the License.'
