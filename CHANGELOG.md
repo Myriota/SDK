@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.1
+
+API Changes:
+
+- Changed the input paramter of BoardAntennaSelect to enable more control to the antenna select pin
+- Adds support to wake up from LEUART interface and corresponding example code
+- Adds TimeSet to set the system time
+- Adds LocationSet to set the current location
+- Adds ModuleIDGet to get module ID string
+- Adds API to support satellite radio RF test
+- Adds BSP API BoardDebugRead
+
+Improvements:
+- Improves the pulse counter example code
+- Improves updater.py to support waiting for serial port to be ready
+
 ## 1.1.0
 
 API changes:

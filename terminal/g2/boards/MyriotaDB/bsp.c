@@ -17,8 +17,6 @@
 
 #define LED_PIN PIN_GPIO3
 #define GNSS_EN_PIN PIN_GPIO4
-// Backward support of development board revision 1
-#define ANT_SEL_PIN_REV1 PIN_RF_TEST2
 #define ANT_SEL_PIN PIN_GPIO6
 #define DEBUG_INTERFACE UART_0
 #define DEBUG_BAUDRATE 115200
@@ -49,9 +47,8 @@ __attribute__((weak)) int BoardStart(void) {
   Delay(200);
   LedTurnOff();
   GPIOSetModeInput(MODULE_BAND_PIN, GPIO_NO_PULL);
-  printf("Myriota development board %s variant\n",
-         GPIOGet(MODULE_BAND_PIN) == GPIO_HIGH ? "VHF" : "UHF");
-
+  printf("Myriota development board %s variant, module ID: %s\n",
+         GPIOGet(MODULE_BAND_PIN) == GPIO_HIGH ? "VHF" : "UHF", ModuleIDGet());
   return 0;
 }
 
@@ -124,24 +121,23 @@ void BoardGNSSPowerDisable(void) {
 
 bool BoardGNSSPowerIsEnabled(void) { return GPIOGet(GNSS_EN_PIN); }
 
-__attribute__((weak)) int BoardAntennaSelect(bool IsTx, RadioBand Band) {
-  (void)(IsTx);
-
+__attribute__((weak)) int BoardAntennaSelect(RadioMode Mode, RadioBand Band) {
   bool OnBoardAntenna = true;
   if (Band == RADIO_BAND_VHF) OnBoardAntenna = false;
 
-  // Support all development board revisions
-  GPIOSetModeOutput(ANT_SEL_PIN_REV1);
   GPIOSetModeOutput(ANT_SEL_PIN);
 
-  if (OnBoardAntenna) {
-    GPIOSetHigh(ANT_SEL_PIN_REV1);
-    GPIOSetHigh(ANT_SEL_PIN);
-  } else {
-    GPIOSetLow(ANT_SEL_PIN_REV1);
+  // Set the antenna select pin to proper state to save power
+  if ((Mode == RADIO_MODE_INIT) || (Mode == RADIO_MODE_DEINIT)) {
     GPIOSetLow(ANT_SEL_PIN);
+    return 0;
   }
 
+  if (OnBoardAntenna) {
+    GPIOSetHigh(ANT_SEL_PIN);
+  } else {
+    GPIOSetLow(ANT_SEL_PIN);
+  }
   return 0;
 }
 
@@ -154,4 +150,8 @@ void BoardDebugDeinit(void) { UARTDeinit(DebugHandle); }
 
 int BoardDebugWrite(const uint8_t *Tx, size_t Length) {
   return UARTWrite(DebugHandle, Tx, Length);
+}
+
+int BoardDebugRead(uint8_t *Rx, size_t Length) {
+  return UARTRead(DebugHandle, Rx, Length);
 }

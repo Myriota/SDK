@@ -36,6 +36,7 @@
 /// Returns string which contains semicolon separated variables.
 /// - GNSSFIX
 ///     - 0: skip system GNSS fix
+///     - 1: get time only
 ///     - unset: do system GNSS fix
 ///     .
 /// - DUMPTX
@@ -99,9 +100,15 @@ bool BoardGNSSPowerIsEnabled(void);
 /// @{
 
 /// Select the antenna based on satellite radio mode and frequency band.
+typedef enum {
+  RADIO_MODE_RX,      ///< radio downlink
+  RADIO_MODE_TX,      ///< radio uplink
+  RADIO_MODE_INIT,    ///< radio initialisation
+  RADIO_MODE_DEINIT,  ///< radio de-initialisation
+} RadioMode;
 typedef enum { RADIO_BAND_VHF, RADIO_BAND_UHF, RADIO_BAND_ISM } RadioBand;
 /// Returns 0 if succeeded and -1 if failed.
-int BoardAntennaSelect(bool IsTx, RadioBand Band);
+int BoardAntennaSelect(RadioMode Mode, RadioBand Band);
 
 /// @}
 
@@ -112,6 +119,8 @@ void *BoardDebugInit(void);
 void BoardDebugDeinit(void);
 /// Returns 0 if all bytes are sent and -1 if not.
 int BoardDebugWrite(const uint8_t *Tx, size_t Length);
+/// Returns number of bytes read back and -1 if read fails.
+int BoardDebugRead(uint8_t *Rx, size_t Length);
 
 /// @}
 

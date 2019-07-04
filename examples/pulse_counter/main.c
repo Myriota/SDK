@@ -11,6 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Can be tested with development board by shorting pin27(GPIO0_WKUP) and
+// pin30(PULSE0) on the breakout header and pressing the WAKEUP button
+
 #include "myriota_user_api.h"
 
 static time_t RunsOnPulseCounterEvent() {
@@ -23,13 +26,12 @@ static time_t RunsOnPulseCounterEvent() {
 }
 
 void AppInit() {
-  // Initialise to generate event every 6 pulses.
-  if (PulseCounterInit(6, 0))
-    printf("Failed to initialise pulse counter\n");
+  // De-assert the pin based on the actual circuit design
+  GPIOSetModeInput(PIN_PULSE0, GPIO_PULL_DOWN);
 
-  // Pullup on pulse counter input.
-  GPIOSetModeInput(PIN_PULSE0, GPIO_PULL_UP);
+  // Initialise to generate event every 6 pulses
+  if (PulseCounterInit(6, 0)) printf("Failed to initialise pulse counter\n");
 
-  // Schedule a job to process pulse counter overflow event
+  // Schedule a job to process pulse counter event
   ScheduleJob(RunsOnPulseCounterEvent, OnPulseCounterEvent());
 }

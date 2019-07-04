@@ -14,18 +14,23 @@
 
 allsourceindirs = $(foreach dir,$(1), $(foreach ext, $(2), $(wildcard $(dir)/*.$(ext))))
 
+# default extentions
+ASMEXT?=s
+CEXT?=c
+CPPEXT?=cpp
+
 # get c and cpp sources and corresponding objects
 MATH_BUILD_DIR := $(abspath .obj)
 MATH_SRC_DIR := $(abspath $(ROOTDIR)/math)
 MATH_SRC := $(call allsourceindirs,$(MATH_SRC_DIR) ,$(ASMEXT) $(CEXT) $(CPPEXT))
-MATH_OBJECTS:=$(patsubst %,$(MATH_BUILD_DIR)%.o,$(MATH_SRC))
+MATH_OBJECTS:=$(patsubst %,$(MATH_BUILD_DIR)%.mathlib.o,$(MATH_SRC))
 
 ## Build static myriotamath library
 myriotamath.a : $(MATH_OBJECTS)
 	ar rcs $@ $(MATH_OBJECTS)
 
 # Header dependency files
-MATH_DEPS := $(patsubst %.o, %.d, $(MATH_OBJECTS))
+MATH_DEPS := $(patsubst %.mathlib.o, %.d, $(MATH_OBJECTS))
 
 # Include header dependency files "-" ignores files that don't exist
 -include $(MATH_DEPS)
@@ -33,14 +38,14 @@ MATH_DEPS := $(patsubst %.o, %.d, $(MATH_OBJECTS))
 # Targets for object files
 # This allows separate build and source directories.
 # MMD flag builds header dependecy files
-$(MATH_BUILD_DIR)%.$(ASMEXT).o : %.$(ASMEXT)
+$(MATH_BUILD_DIR)%.$(ASMEXT).mathlib.o : %.$(ASMEXT)
 	mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) -c $< -o $@
 
-$(MATH_BUILD_DIR)%.$(CEXT).o : %.$(CEXT)
+$(MATH_BUILD_DIR)%.$(CEXT).mathlib.o : %.$(CEXT)
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
-$(MATH_BUILD_DIR)%.$(CPPEXT).o : %.$(CPPEXT)
+$(MATH_BUILD_DIR)%.$(CPPEXT).mathlib.o : %.$(CPPEXT)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $@

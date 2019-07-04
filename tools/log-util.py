@@ -146,22 +146,51 @@ def decode_log(logfile):
                                 dump_bytes(bytes)
 
 
-def capture_bootloader(portname, baudrate):
-    ser = serial.Serial(
-        port=portname,
-        baudrate=baudrate,
-        parity=serial.PARITY_NONE,
-        stopbits=serial.STOPBITS_ONE,
-        bytesize=serial.EIGHTBITS,
-        timeout=0.5
-    )
+def capture_bootloader(portname, baudrate, wait_flag):
+    if wait_flag:
+        print('Waiting for serial port', portname)
+        while True:
+            try:
+                ser = serial.Serial(
+                    port=portname,
+                    baudrate=baudrate,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    bytesize=serial.EIGHTBITS,
+                    xonxoff=0,
+                    rtscts=0,
+                    timeout=0.5
+                )
+                break
+            except (OSError, serial.SerialException):
+                time.sleep(0.5)
+                pass
+    else:
+        try:
+            ser = serial.Serial(
+                port=portname,
+                baudrate=baudrate,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS,
+                xonxoff=0,
+                rtscts=0,
+                timeout=0.5
+            )
+        except (OSError, serial.SerialException):
+            print('Failed to open', portname)
+            sys.exit(1)
+
     ser.reset_input_buffer()
-    # If already in bootloader, return straightaway
     ser.write(b'U')
     ser.flush()
-    if b'U' in ser.readline() and b'Unknown' in ser.readline():
+    out = ser.readline()
+    if out is not None:
+        out += ser.readline()
+        out += ser.readline()
+    if b'Unknown' in out or b'Bootloader' in out:
         return ser
-    print('Please press the reset button', end='')
+    print('Please reset the device', end='')
     sys.stdout.flush()
 
     # Try to capture the bootloader
@@ -215,7 +244,7 @@ def main():
     if serial.tools.list_ports.comports():
         portname = serial.tools.list_ports.comports()[0].device
 
-    parser = argparse.ArgumentParser(description='Myriota terminal log decoder',
+    parser = argparse.ArgumentParser(description='Myriota device log decoder',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-i", "--ifile", dest="infile",
                         help="decode local log FILE", metavar='FILE')
@@ -223,7 +252,9 @@ def main():
                         metavar="FILE",
                         help="write log to FILE")
     parser.add_argument("-p", "--port", dest="portname", metavar='PORT', default=portname,
-                        help="serial PORT the Myriota terminal is connected to, e.g. /dev/ttyUSB0")
+                        help="serial PORT the Myriota device is connected to, e.g. /dev/ttyUSB0")
+    parser.add_argument('-w', '--wait', dest='wait_flag', action='store_true', default=False,
+                        help='wait for PORT to be available')
     parser.add_argument("-x", "--purge", dest="purge_flag",
                         action="store_true",
                         default=False, help="purge the log")
@@ -254,13 +285,13 @@ def main():
             answer = raw_input("Do you want to purge the log [y/n]? ").lower()
             if answer == 'y':
                 if ser is None:
-                    ser = capture_bootloader(portname, args.baud_rate)
+                    ser = capture_bootloader(portname, args.baud_rate, args.wait_flag)
                     purge_log(ser)
         sys.exit()
 
     if not infile:
         if portname != 'None':
-            ser = capture_bootloader(portname, args.baud_rate)
+            ser = capture_bootloader(portname, args.baud_rate, args.wait_flag)
             dump = read_log(ser)
             print('Writing log to', outfile)
             with open(outfile, "wb") as binary_file:

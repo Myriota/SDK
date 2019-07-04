@@ -21,6 +21,7 @@ SECTIONS
 {
   .text :
   {
+    KEEP(*(__user_app))
     *(.text.SDKUserAppInit);
     *(.text*)
 

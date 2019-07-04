@@ -51,7 +51,6 @@ enum ModulePinDef {
   PIN_SPI_MISO = 21,
   PIN_SPI_MOSI = 22,
   PIN_GPIO0_WKUP = 24,
-  PIN_RF_TEST2 = 32,  ///< reserved
   PIN_GPIO4 = 33,
   PIN_GPIO5 = 34,
   PIN_GPIO6 = 35,
@@ -186,7 +185,7 @@ void UARTDeinit(void *Handle);
 /// Write to a UART interface synchronously.
 /// Returns 0 if write succeeds and -1 if read fails.
 int UARTWrite(void *Handle, const uint8_t *Tx, size_t Length);
-/// Read from input buffer of a UART interface.
+/// Read from input buffer of a UART interface. The buffer size is 50 bytes.
 /// Returns number of bytes read back and -1 if read fails.
 int UARTRead(void *Handle, uint8_t *Rx, size_t Length);
 
@@ -213,6 +212,27 @@ int PulseCounterInit(uint32_t Limit, uint32_t Options);
 uint64_t PulseCounterGet(void);
 /// Deinitialise the pulse counter.
 void PulseCounterDeinit(void);
+
+/// @}
+
+/// @defgroup RF_Test Satellite radio RF test
+/// @{
+
+/// RF test Tx type
+enum RFTestTxType {
+  TX_TYPE_TONE = 0,  ///< transmit tone, i.e. CW
+  TX_TYPE_PRBS       ///< transmit pseudorandom binary sequence
+};
+/// Start the RF Tx test. The default LED is on when transmitting.
+/// Antenna port should not be open when testing.
+/// \p Frequency is in Hertz.
+/// \p TxType can be tone or pseudorandom binary sequence defined by
+/// #RFTestTxType. When testing in burst mode, the radio is on for 250ms and off
+/// for 1750ms. Otherwise the radio transmits continuously. Returns 0 if
+/// succeeded and -1 if failed.
+int RFTestTxStart(uint32_t Frequency, uint8_t TxType, bool IsBurst);
+/// Stop the RF Tx test.
+void RFTestTxStop();
 
 /// @}
 

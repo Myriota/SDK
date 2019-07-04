@@ -39,6 +39,23 @@ def open_serial_port(portname):
         sys.exit(1)
     return ser
 
+def wait_for_serial_port(portname):
+    while True:
+        try:
+            ser = serial.Serial(
+                port=portname,
+                baudrate=115200,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS,
+                xonxoff=0,
+                rtscts=0,
+                timeout=0.5
+            )
+            return ser
+        except (OSError, serial.SerialException):
+            time.sleep(0.5)
+            pass
 
 def capture_bootloader(ser):
     # return straightaway if already in bootloader
@@ -51,7 +68,7 @@ def capture_bootloader(ser):
         out += ser.readline()
     if b'Unknown' in out or b'Bootloader' in out:
         return
-    print('Please reset the board', end='')
+    print('Please reset the device', end='')
     sys.stdout.flush()
     ser.reset_input_buffer()
 
@@ -237,7 +254,7 @@ def main():
     if serial.tools.list_ports.comports():
         port_name = serial.tools.list_ports.comports()[0].device
 
-    parser = argparse.ArgumentParser(description='Myriota terminal updater',
+    parser = argparse.ArgumentParser(description='Myriota device updater',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-f", "--system_image", dest='system_image_name',
                         help='system image FILE to update with', metavar='FILE')
@@ -247,7 +264,9 @@ def main():
                         action='append', metavar=('raw_command', 'FILE'),
                         help='use raw command and FILE pair to update, can have multiple')
     parser.add_argument('-p', '--port', dest='portname', metavar='PORT', default=port_name,
-                        help='serial PORT the Myriota terminal is connected to, e.g. /dev/ttyUSB0')
+                        help='serial PORT the Myriota device is connected to, e.g. /dev/ttyUSB0')
+    parser.add_argument('-w', '--wait', dest='wait_flag', action='store_true', default=False,
+                        help='wait for PORT to be available')
     parser.add_argument('-s', '--start', dest='start_flag', action='store_true',
                         default=False,
                         help='start the application after update')
@@ -265,8 +284,12 @@ def main():
         parser.error("Please specify the serial port.")
     port_name = args.portname
 
-    print('Using serial port', port_name)
-    serial_port = open_serial_port(port_name)
+    if args.wait_flag:
+        print('Waiting for serial port', port_name)
+        serial_port = wait_for_serial_port(port_name)
+    else:
+        print('Using serial port', port_name)
+        serial_port = open_serial_port(port_name)
     capture_bootloader(serial_port)
 
     if args.get_id_flag:

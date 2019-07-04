@@ -38,6 +38,13 @@ void SDKVersionGet(uint32_t *Major, uint32_t *Minor, uint32_t *Patch);
 
 /// @}
 
+/// @defgroup ModuleID_get Get module ID string
+/// @{
+
+char *ModuleIDGet(void);
+
+/// @}
+
 /// @defgroup App_init Application initialisation
 /// User defined application initialisation logic
 /// @{
@@ -66,6 +73,8 @@ time_t DaysFromNow(unsigned Days);
 time_t OnGPIOWakeup(void);
 /// Pulse counter overflow event
 time_t OnPulseCounterEvent(void);
+/// Leuart activity event
+time_t OnLeuartReceive(void);
 /// Return a time after \p After and before \p Before immediately prior to a
 /// satellite transmit opportunity. Can be used to reduce latency between sensor
 /// reading and satellite transmission. If no opportunity is found between \p
@@ -111,8 +120,13 @@ bool HasValidGNSSFix(void);
 /// Returns last recorded latitude and longitude in fixed point format and
 /// timestamp of last fix. Values are in degrees multiplied by 1e7.
 void LocationGet(int32_t *Latitude, int32_t *Longitude, time_t *TimeStamp);
+/// Set the location, Lat and Lon are in degrees multiplied by 1e7.
+/// Location set may be overridden by GNSS fix if GNSS location fix is enabled.
+void LocationSet(int32_t Latitude, int32_t Longitude);
 /// Get current epoch time
 time_t TimeGet(void);
+/// Set current epoch time
+void TimeSet(time_t Time);
 
 /// @}
 

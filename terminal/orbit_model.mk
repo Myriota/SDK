@@ -20,7 +20,7 @@ endif
 
 .PHONY: $(SATELLITES)
 $(SATELLITES):
-	curl -f https://static.myriota.com/access_nodes/r2/$@ --output $@ || \
+	curl -f https://static.myriota.com/access_nodes/r3/$@ --output $@ || \
 		([ -e $@ ] && echo "Using old satellite $@") || \
 		(echo "\e[33mError: Satellite $@ not found\e[0m"; exit 1)
 

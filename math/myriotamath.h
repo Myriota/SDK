@@ -293,16 +293,16 @@ double myriota_random_exponential(const double mean);
 double myriota_continued_fraction(double x, unsigned int size, int *r);
 
 // Greatest common divisor between two integers
-int gcd(int a, int b);
+long long gcd(long long a, long long b);
 
 typedef struct {
-  int p;  // numerator
-  int q;  // denominator
+  long long p;  // numerator
+  long long q;  // denominator
 } myriota_rational;
 
 // construct rational number equivalent to a/b. Numerator and denominator
 // of resulting rational will always be relatively prime.
-myriota_rational make_myriota_rational(int a, int b);
+myriota_rational make_myriota_rational(long long a, long long b);
 
 // The sum of two rational numbers
 myriota_rational myriota_rational_sum(myriota_rational a, myriota_rational b);
@@ -487,24 +487,29 @@ void myriota_polyfit(const double *t, const double *x, const int N, const int r,
 
 // Generic function for type, length, value data structures. These functions
 // require two functions, int size(void*) that returns the size (or length) in
-// bytes of an element, and void end(void*) that write a terminating value. The
-// size of the terminating value must be zero.
-// Return next element in type, length, value sequence. Returns NULL if next
-// element does not exist.
+// bytes of an element, and int end(void*) that write a terminating value and
+// return the length in bytes of the terminating value. It is expected that
+// end(NULL) returns the length without writing any bytes and that size(NULL)
+// returns 0. The size of the terminating value must be zero as out by the
+// size(void*) function. Returns next element in type, length, value sequence.
+// Returns NULL if next element does not exist.
 void *myriota_tlv_next(const void *tlv, unsigned int (*size)(const void *));
 // Append an element to a type length value sequence, Returns -1 on fail, 0 on
 // success.
 int myriota_tlv_append(void *tlv, const void *a,
-                       unsigned int (*size)(const void *), void (*end)(void *));
+                       unsigned int (*size)(const void *), int (*end)(void *));
 // Delete an element. Return -1 if the element does not exist, 0 on success.
 int myriota_tlv_delete(void *tlv, void *d, unsigned int (*size)(const void *),
-                       void (*end)(void *));
+                       int (*end)(void *));
 // Return total size of sequence
 unsigned int myriota_tlv_size(const void *tlv,
                               unsigned int (*size)(const void *));
 // Return total number of element
 unsigned int myriota_tlv_count(const void *tlv,
                                unsigned int (*size)(const void *));
+// Get the ith element in a sequnece. Returns NULL if out of bounds.
+void *myriota_tlv_get(int i, const void *tlv,
+                      unsigned int (*size)(const void *));
 // Find an element in a sequnece. Returns NULL if the element cannot be found.
 void *myriota_tlv_find(const void *tlv, unsigned int (*size)(const void *),
                        bool (*find)(const void *, void *), void *find_state);
@@ -513,6 +518,28 @@ unsigned int myriota_tlv_count_find(const void *tlv,
                                     unsigned int (*size)(const void *),
                                     bool (*find)(const void *, void *),
                                     void *find_state);
+// Find ith element in a sequnece satisfying boolean function. Returns NULL if
+// the element cannot be found.
+void *myriota_tlv_get_find(int i, const void *tlv,
+                           unsigned int (*size)(const void *),
+                           bool (*find)(const void *, void *),
+                           void *find_state);
+// Filter those elements satisfying boolean function f into array of pointers x.
+// Assumes x is allocated with enough memory to hold the result, e.g. at least
+// myriota_tlv_count_find(tlv, size, find, find_state) elements. Returns the
+// number of elements written into x.
+int myriota_tlv_filter(const void *tlv, unsigned int (*size)(const void *),
+                       bool (*f)(const void *, void *), void *f_state,
+                       const void *x[]);
+// Read tlv structure from file. If the file ends before the terminating value
+// is reached, then the terminating value is added.
+// Returns malloc'd structure than must be freed by the caller.
+void *myriota_tlv_from_file(FILE *f, int (*end)(void *));
+
+// Like standard qsort but also removes duplicates. Returns the number of unique
+// elements.
+int myriota_sort_unique(void *base, size_t nitems, size_t size,
+                        int (*compar)(const void *, const void *));
 
 #ifdef __cplusplus
 }

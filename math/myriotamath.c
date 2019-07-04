@@ -373,14 +373,14 @@ double myriota_continued_fraction(double x, unsigned int size, int *a) {
   return myriota_continued_fraction(1.0 / rem, size - 1, a + 1);
 }
 
-int gcd(int a, int b) {
+long long gcd(long long a, long long b) {
   if (b == 0)
     return abs(a);
   else
     return gcd(abs(b), abs(a) % abs(b));
 }
 
-myriota_rational make_myriota_rational(int a, int b) {
+myriota_rational make_myriota_rational(long long a, long long b) {
   const int d = gcd(a, b);
   if (b < 0) return (myriota_rational){-a / d, -b / d};
   return (myriota_rational){a / d, b / d};
@@ -1007,19 +1007,19 @@ unsigned int myriota_tlv_size(const void *tlv,
   return s;
 }
 
+static bool _true(const void *a, void *b) { return true; }
+
 unsigned int myriota_tlv_count(const void *tlv,
                                unsigned int (*size)(const void *)) {
-  if (tlv == NULL) return 0;
-  if (size(tlv) == 0) return 0;
-  unsigned int s = 1;
-  while ((tlv = myriota_tlv_next(tlv, size))) s++;
-  return s;
+  return myriota_tlv_count_find(tlv, size, _true, NULL);
 }
 
 unsigned int myriota_tlv_count_find(const void *tlv,
                                     unsigned int (*size)(const void *),
                                     bool (*find)(const void *, void *),
                                     void *find_state) {
+  if (tlv == NULL) return 0;
+  if (size(tlv) == 0) return 0;
   unsigned int c = 0;
   while ((tlv = myriota_tlv_find(tlv, size, find, find_state))) {
     c++;
@@ -1036,9 +1036,15 @@ void *myriota_tlv_next(const void *tlv, unsigned int (*size)(const void *)) {
   return next;
 }
 
+void *myriota_tlv_get(int i, const void *tlv,
+                      unsigned int (*size)(const void *)) {
+  if (size(tlv) == 0) return NULL;
+  if (i <= 0) return (void *)tlv;
+  return myriota_tlv_get(i - 1, myriota_tlv_next(tlv, size), size);
+}
+
 int myriota_tlv_append(void *tlv, const void *a,
-                       unsigned int (*size)(const void *),
-                       void (*end)(void *)) {
+                       unsigned int (*size)(const void *), int (*end)(void *)) {
   if (tlv == NULL) return -1;
   if (a == NULL) return -1;
   if (size(a) == 0) return -1;
@@ -1050,8 +1056,8 @@ int myriota_tlv_append(void *tlv, const void *a,
 }
 
 int myriota_tlv_delete(void *tlv, void *d, unsigned int (*size)(const void *),
-                       void (*end)(void *)) {
-  if (tlv == NULL) return -1;
+                       int (*end)(void *)) {
+  if (size(tlv) == 0) return -1;
   do {  // find d in tlv
     if (d == tlv) break;
   } while ((tlv = myriota_tlv_next(tlv, size)));
@@ -1065,9 +1071,66 @@ int myriota_tlv_delete(void *tlv, void *d, unsigned int (*size)(const void *),
 
 void *myriota_tlv_find(const void *tlv, unsigned int (*size)(const void *),
                        bool (*find)(const void *, void *), void *find_state) {
+  return myriota_tlv_get_find(0, tlv, size, find, find_state);
+}
+
+void *myriota_tlv_get_find(int i, const void *tlv,
+                           unsigned int (*size)(const void *),
+                           bool (*find)(const void *, void *),
+                           void *find_state) {
   if (tlv == NULL) return NULL;
+  if (size(tlv) == 0) return NULL;
+  int c = -1;
   do {  // find d in tlv
-    if (find(tlv, find_state)) return (void *)tlv;
+    if (find(tlv, find_state)) c++;
+    if (c == i) return (void *)tlv;
   } while ((tlv = myriota_tlv_next(tlv, size)));
   return NULL;
+}
+
+int myriota_tlv_filter(const void *tlv, unsigned int (*size)(const void *),
+                       bool (*f)(const void *, void *), void *f_state,
+                       const void *x[]) {
+  if (size(tlv) == 0) return 0;
+  int i = 0;
+  while (size(tlv) != 0) {
+    if (f(tlv, f_state)) {
+      x[i] = tlv;
+      i++;
+    }
+    tlv = myriota_tlv_next(tlv, size);
+  }
+  return i;
+}
+
+void *myriota_tlv_from_file(FILE *f, int (*end)(void *)) {
+  if (f == NULL) return NULL;
+  const int end_size = end(NULL);  // size of terminator
+  size_t s = myriota_greater_power_of_two(end_size) * 8;
+  size_t r = 0;
+  uint8_t *buf = NULL;
+  while (!feof(f)) {
+    buf = (uint8_t *)realloc(buf, s);
+    r += fread(buf + r, 1, s - r - end_size, f);
+    s *= 2;  // file continues, get more memory
+  }
+  end(buf + r);  // add terminator
+  return buf;
+}
+
+int myriota_sort_unique(void *base, size_t nitems, size_t size,
+                        int (*cmp)(const void *, const void *)) {
+  if (base == NULL) return 0;
+  if (nitems == 0) return 0;
+  uint8_t t[size * nitems];
+  memcpy(t, base, size * nitems);
+  qsort(t, nitems, size, cmp);
+  int c = 1;
+  memcpy(base, t, size);  // first element is unique
+  for (size_t i = 1; i < nitems; i++) {
+    if (cmp(t + (i - 1) * size, t + i * size) == 0) continue;
+    memcpy(base + c * size, t + i * size, size);
+    c++;
+  }
+  return c;
 }

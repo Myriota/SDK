@@ -12,13 +12,13 @@
 // limitations under the License.
 
 // This example demonstrates uart interface communication between an external
-// device and the Myriota terminal via the LEUART interface. This also
-// demonstrates a basic modem application. Operates as follows:
+// device and the Myriota device. This also demonstrates a basic modem
+// application. Operates as follows:
 // 1. the external device wakes up the terminal by setting GPIO0 high,
-// 2. waits for the "READY\n" string from the terminal,
+// 2. waits for the "READY\n" string from Myriota device,
 // 3. sends messsage string terminated by "\n",
 // 4. sets GPIO0 low again.
-// 5. The Myriota terminal acknowledges reception with string "\nOK\n",
+// 5. The Myriota device acknowledges reception with string "\nOK\n",
 // 6. then schedules the message string for satellite tramsmission.
 
 #include <string.h>
@@ -29,6 +29,11 @@ const static uint8_t GPIOPin = PIN_GPIO0_WKUP;
 #define READY_STRING "READY\n"
 #define RECEIVE_TIMEOUT 2000  // [ms]
 #define ACK_STRING "\nOK\n"
+
+// The interface can be UART_0 or LEUART, depending the debug interface defined
+// in BSP
+#define UART_INTERFACE LEUART
+#define UART_BAUDRATE 9600
 
 // Read new line terminated string from UART with timeout
 // Return number of bytes read or -1 on timeout or string is too long
@@ -48,14 +53,14 @@ int UARTReadStringWithTimeout(void *Handle, uint8_t *Rx, size_t MaxLength) {
 }
 
 static time_t UartComm() {
-  void *uart_handle = UARTInit(LEUART, 9600, 0);
+  void *uart_handle = UARTInit(UART_INTERFACE, UART_BAUDRATE, 0);
   if (uart_handle == NULL) {
-    printf("Failed to initialise leuart\n");
+    printf("Failed to initialise uart interface\n");
     return OnGPIOWakeup();
   }
   UARTWrite(uart_handle, (uint8_t *)READY_STRING, strlen(READY_STRING));
 
-  uint8_t Rx[MAX_MESSAGE_SIZE];
+  uint8_t Rx[MAX_MESSAGE_SIZE] = {0};
   int len = UARTReadStringWithTimeout(uart_handle, Rx, MAX_MESSAGE_SIZE);
   if (len <= 0) {
     printf("Failed to receive message\n");
