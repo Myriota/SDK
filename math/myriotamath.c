@@ -75,6 +75,12 @@ long myriota_long_mod(long x, long y) {
   return t;
 }
 
+int64_t myriota_int64_mod(int64_t x, int64_t y) {
+  int64_t t = x % y;
+  if (t < 0) return t + y;
+  return t;
+}
+
 unsigned int myriota_greater_power_of_two(unsigned int x) {
   unsigned int p = 1;
   while (p < x) p *= 2;

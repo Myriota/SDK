@@ -30,10 +30,10 @@ int BoardStart() {
   GPIOSetModeInput(MODULE_BAND_PIN, GPIO_NO_PULL);
   uint32_t TxFreq;
   if (GPIOGet(MODULE_BAND_PIN) == GPIO_HIGH) {
-    printf("Testing VHF module\n");
+    printf("Testing VHF module %s\n", ModuleIDGet());
     TxFreq = VHF_TX_DEFAULT_FREQUENCY;
   } else {
-    printf("Testing UHF module\n");
+    printf("Testing UHF module %s\n", ModuleIDGet());
     TxFreq = UHF_TX_DEFAULT_FREQUENCY;
   }
   while (1) {

@@ -232,7 +232,7 @@ enum RFTestTxType {
 /// succeeded and -1 if failed.
 int RFTestTxStart(uint32_t Frequency, uint8_t TxType, bool IsBurst);
 /// Stop the RF Tx test.
-void RFTestTxStop();
+void RFTestTxStop(void);
 
 /// @}
 

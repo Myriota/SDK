@@ -261,6 +261,7 @@ int myriota_int_array_arg_max(const int *S, unsigned int numS);
 // as the remainder of x after division by y when x is negative
 int myriota_int_mod(int x, int y);
 long myriota_long_mod(long x, long y);
+int64_t myriota_int64_mod(int64_t x, int64_t y);
 
 // Ceiling after division of nonegative integer a by nonnegative integer b
 static inline unsigned int myriota_int_div_ceil(unsigned int a,

@@ -38,9 +38,12 @@ void SDKVersionGet(uint32_t *Major, uint32_t *Minor, uint32_t *Patch);
 
 /// @}
 
-/// @defgroup ModuleID_get Get module ID string
+/// @defgroup ModuleID_get Get module ID string and part number
 /// @{
 
+/// Returns the string of module ID in the format of "00xxxxxxxx Mx-2x" where
+/// 00xxxxxxxx is the module ID in hexadecimal string and Mx-2x is the module's
+/// part number. Returns null if module ID is not available.
 char *ModuleIDGet(void);
 
 /// @}

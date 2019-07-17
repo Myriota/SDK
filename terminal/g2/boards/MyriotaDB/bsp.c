@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "bsp.h"
+#include <string.h>
 #include "myriota_hardware_api.h"
 #include "myriota_user_api.h"
 
@@ -24,8 +25,10 @@
 
 static void *DebugHandle;
 
-#ifdef LAB_TEST
+#if defined(LAB_TEST)
 #define BOARD_ENV "GNSSFIX=0;DUMPTX=1"
+#elif defined(LAB_TEST_WITH_LOCATION)
+#define BOARD_ENV "DUMPTX=1"
 #else
 #define BOARD_ENV ""
 #endif
@@ -47,8 +50,12 @@ __attribute__((weak)) int BoardStart(void) {
   Delay(200);
   LedTurnOff();
   GPIOSetModeInput(MODULE_BAND_PIN, GPIO_NO_PULL);
-  printf("Myriota development board %s variant, module ID: %s\n",
+  printf("Myriota development board %s variant %s\n",
          GPIOGet(MODULE_BAND_PIN) == GPIO_HIGH ? "VHF" : "UHF", ModuleIDGet());
+  char *EnvStr = BoardEnvGet();
+  if (EnvStr && strlen(EnvStr)) {
+    printf("Using env %s\n", EnvStr);
+  }
   return 0;
 }
 
@@ -78,7 +85,6 @@ int BoardBatteryVoltGet(uint32_t *mv) {
     else
       Ref = ADC_REF_2V5;  // Battery voltage won't be higher than 5V
     if (ADCGetVoltage(ADCPin, Ref, &batt)) {
-      printf("Failed to get battery voltage\n");
       GPIOSetModeInput(ControlPin, GPIO_PULL_DOWN);
       return -1;
     } else {

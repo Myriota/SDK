@@ -27,6 +27,10 @@ ifeq ($(SATELLITES),Lab)
 CFLAGS +=-DLAB_TEST
 endif
 
+ifeq ($(SATELLITES),LabWithLocation)
+CFLAGS +=-DLAB_TEST_WITH_LOCATION
+endif
+
 LIB_DIR:=$(ROOTDIR)/terminal/g2
 LIBS:=$(LIB_DIR)/user_app_lib.a
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.2
+
+Fixes:
+
+- Fixes an issue where TX power is low when building from SDK 1.1.1
+
+API changes:
+
+- ModuleIDGet returns module part number as well
+
+
+Improvements:
+
+- Adds support to dump encoded messages for injection when running in LabWithLocation mode
+- Adds support of revision 4 modules
+
 ## 1.1.1
 
 API Changes:
