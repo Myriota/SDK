@@ -32,8 +32,8 @@ def do_query(idtoken, moduleid, range_from=None, limit=None):
     url = "?".join(["%s/data/%s/Message" % (_domain, moduleid), "&".join(params)])
     response = requests.get(url, headers={"Authorization": idtoken})
 
-    if response.status_code != 200:
-        raise ValueError(response.text)
+    response.raise_for_status()
+
     return response.json()["Items"]
 
 def main(argv=None, auth=myriota_auth.auth):
@@ -63,7 +63,11 @@ def main(argv=None, auth=myriota_auth.auth):
     if args.command == "query":
         range_from = args.range_from * 1000
         idtoken = auth()['IdToken']
-        items = do_query(idtoken, args.moduleid, range_from, args.limit)
+        try:
+            items = do_query(idtoken, args.moduleid, range_from, args.limit)
+        except requests.exceptions.HTTPError as e:
+            print(e)
+            sys.exit(1)
         return json.dumps(items, indent=2)
     else:
         return "Invalid command"

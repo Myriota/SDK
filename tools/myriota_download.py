@@ -26,8 +26,7 @@ def get_download_url(id_token, file_key):
 
     url = "%s/%s" % (__domain, file_key)
     response = requests.get(url, headers={"Authorization": id_token})
-    if response.status_code != 200:
-        raise ValueError(response.text)
+    response.raise_for_status()
     return response.text
 
 def download_file(url, output):
@@ -49,9 +48,6 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
 
-    token = myriota_auth.auth()['IdToken']
-    s3_url = get_download_url(token, args.filename)
-
     # If output is not provided, use the original filename
     if args.output is None:
         output = os.path.basename(args.filename)
@@ -59,6 +55,8 @@ def main(argv=None):
         output = args.output
 
     try:
+        token = myriota_auth.auth()['IdToken']
+        s3_url = get_download_url(token, args.filename)
         download_file(s3_url, output)
     # Handle http errors from s3 download
     except requests.exceptions.HTTPError as e:

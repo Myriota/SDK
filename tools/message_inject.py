@@ -40,8 +40,7 @@ def do_inject(idtoken, moduleid):
                 headers = {'Content-type': 'application/json', 'Authorization': idtoken()['IdToken']}
                 url = _domain+'/messages'
                 response = requests.post(url, data=json.dumps(data), headers=headers)
-                if response.status_code != 200:
-                    raise ValueError(response.text)
+                response.raise_for_status()
             line = ''
 
 
@@ -62,7 +61,11 @@ def main(argv=None):
         print("Run myriota_auth.py to generate security token first.")
         return
     idtoken = myriota_auth.auto_auth()
-    do_inject(idtoken, args.moduleid)
+    try:
+        do_inject(idtoken, args.moduleid)
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

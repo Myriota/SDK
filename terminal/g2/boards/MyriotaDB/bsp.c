@@ -98,8 +98,8 @@ int BoardBatteryVoltGet(uint32_t *mv) {
 }
 
 void BoardLEDInit(void) {
-  GPIOSetModeOutput(PIN_GPIO3);
-  GPIOSetLow(PIN_GPIO3);
+  GPIOSetModeOutput(LED_PIN);
+  GPIOSetLow(LED_PIN);
 }
 
 void BoardLEDDeinit(void) { GPIOSetModeInput(LED_PIN, GPIO_PULL_DOWN); }

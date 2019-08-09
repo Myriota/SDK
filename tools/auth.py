@@ -46,7 +46,7 @@ def _post(endpoint, args, region='us-east-1'):
         url = "https://cognito-idp.%s.amazonaws.com/" % region
         response = requests.post(url, json=args, headers=headers)
         result = response.json()
-        if response.status_code != 200:
+        if response.status_code >= 400:
             raise ValueError("; ".join([result["__type"], str(response.status_code), result["message"]]))
 
         return result

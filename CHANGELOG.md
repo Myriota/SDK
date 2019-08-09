@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.3
+
+API changes:
+
+- Reduces I2C clock rate to be compatibility slow devices
+
+Improvements:
+
+- Adds tracker web application example
+- Improves error handling in Python tools
+
 ## 1.1.2
 
 Fixes:

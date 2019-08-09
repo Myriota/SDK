@@ -18,7 +18,7 @@
 // 1. the external device sends messsage string,
 // 2. the Myriota device wakes up and echoes back the message string,
 // 3. the Myriota device sends "\nOK\n",
-// 4. then schedules the message string for satellite tramsmission.
+// 4. then schedules the message string for satellite transmission.
 
 #include <string.h>
 #include "myriota_user_api.h"

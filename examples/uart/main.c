@@ -19,7 +19,7 @@
 // 3. sends messsage string terminated by "\n",
 // 4. sets GPIO0 low again.
 // 5. The Myriota device acknowledges reception with string "\nOK\n",
-// 6. then schedules the message string for satellite tramsmission.
+// 6. then schedules the message string for satellite transmission.
 
 #include <string.h>
 #include "myriota_user_api.h"

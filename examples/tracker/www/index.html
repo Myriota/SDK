@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
+  <link rel="icon" type="image/x-icon" href="https://static.myriota.com/logo/favicon.ico">
+
+  <title>Myriota Device Tracker</title>
+
+  <!-- CSS  -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" type="text/css" rel="stylesheet"/>
+  <style>
+    .collection .collection-item.active {
+      background-color: #0077C8;
+    }
+    .switch label input[type=checkbox] + .lever {
+      background-color: #0077C8;
+    }
+    .switch label input[type=checkbox]:checked + .lever {
+      background-color: rgba(0,0,0,0.38);
+    }
+    .switch label input[type=checkbox]:checked + .lever:after {
+      background-color: #ffffff;
+    }
+    nav,.state-signed-out,.btn,.btn:hover,.progress .indeterminate,.btn-small,.btn-small:hover {
+      background-color: #0077C8;
+    }
+    .progress {
+      background-color: white;
+    }
+    .logo {
+        margin-left: 12px;
+    }
+    .device-list-item:hover {
+      filter: brightness(85%);
+    }
+    #device-list {
+      padding: 10px;
+      position: absolute;
+      height: 95vh;
+    }
+    #device-map {
+      height: 95vh;
+    }
+    .btn-myriota {
+      box-shadow:none;
+      text-transform: none;
+    }
+    .btn-myriota:hover {
+      background-color:white;
+      box-shadow:none;
+      color:#0077C8;
+    }
+    .sort {
+      width: 100% !important;
+      max-width: 360px;
+    }
+    .sortButton {
+      display: flex;
+      color: unset;
+    }
+    .sortButton > span{
+      margin-left: 24px;
+      color: rgba(0,0,0,0.38);
+    }
+    @media only screen and (min-width : 992px) {
+      #device-list {
+        top: 65px;
+        width: 400px;
+      }
+      #device-map {
+        margin-left: 400px;
+      }
+    }
+    @media only screen and (max-width : 992px) {
+      #device-list {
+        width: 90vw;
+      }
+
+      #device-map {
+        margin-left: 0;
+      }
+
+      .brand-logo img {
+        width: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="state-signed-out valign-wrapper" style="height: 100vh;display: none">
+
+    <div class="container">
+        
+        <div class="row center-align">
+          <img src="https://static.myriota.com/logo/horizontal-white.png" width="150"/>
+        </div>
+
+        <div class="row">
+          <div class="col m6 offset-m3 s10 offset-s1">
+              <div class="card-panel hoverable center-align">
+                  <span class="card-title">Myriota Device Tracker</span>
+                  <div class="input-field">
+                      <input id="email" type="email" class="validate">
+                      <label for="email">Email</label>
+                  </div>
+                  <div class="input-field">
+                      <input id="password" type="password" class="validate">
+                      <label for="password">Password</label>
+                  </div>
+                  <button id="sign-in" class="btn btn-myriota" type="submit" name="action">Sign in</button>
+                  <p id="sign-in-error" style="display: none;">Error logging in.</p>
+              </div> 
+            </div>
+        </div>
+
+    </div>
+
+  </div>
+
+  <div class="state-signed-in" style="display: none">
+      <nav style="box-shadow: none;">
+        <div class="nav-wrapper">
+          <div class="brand-logo logo left">
+            <a href="#" data-target="device-list" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+            <img src="https://static.myriota.com/logo/horizontal-white-10x.png" width="200" style="vertical-align: middle;"/>
+          </div>
+          <ul id="nav-mobile" class="right">
+            <li><a id="sign-out" class="btn btn-myriota"><i class="material-icons left">close</i>Log out</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div id="device-list" class="sidenav sidenav-fixed">
+        <div class="progress list-progress">
+          <div class="indeterminate list-loading"></div>
+        </div>
+        <div class="list" style="display: none;overflow-y: hidden /* Stops horizontal sliding within sidenav. */;">
+            <div class="input-field">
+              <i class="material-icons prefix">search</i>
+              <input id="device-list-filter" type="text" class="validate">
+              <label for="device-list-filter">Filter</label>
+            </div>
+            <div class="input-field">
+              <!-- Dropdown Trigger -->
+              <a class="dropdown-trigger sortButton" href="#" data-target="sorting">
+                <i class="material-icons">sort</i>
+                <span id="sortLabel">Sort</span>
+              </a>
+              <!-- Dropdown Structure -->
+              <ul id="sorting" class="dropdown-content sort">
+                <li><a id="a2z" href="#!">A to Z</a></li>
+                <li><a id="location" href="#!">Location</a></li>
+              </ul>
+            </div>
+            <ul id="deviceList" class="collection">
+            </ul>
+        </div>
+        <p id="device-load-error" style="display: none">Could not load any device location data.</p>
+
+      </div>
+
+      <div id="device-map">
+      </div>
+
+  </div>
+
+  <!--  Scripts-->
+  <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <!-- You will need to get your api key (https://developers.google.com/maps/documentation/embed/get-api-key) -->
+  <!-- and append '?key=<your api key>'' to the value of 'src' attribute -->
+  <script src="https://maps.googleapis.com/maps/api/js" type="text/javascript"></script>
+  <script src="js/node-jspack-master/jspack.js"></script>
+  <script src="js/init.js"></script>
+  </body>
+</html>

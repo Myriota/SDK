@@ -502,10 +502,10 @@ int myriota_tlv_append(void *tlv, const void *a,
 // Delete an element. Return -1 if the element does not exist, 0 on success.
 int myriota_tlv_delete(void *tlv, void *d, unsigned int (*size)(const void *),
                        int (*end)(void *));
-// Return total size of sequence
+// Return total size of sequence in bytes
 unsigned int myriota_tlv_size(const void *tlv,
                               unsigned int (*size)(const void *));
-// Return total number of element
+// Return total number of elements
 unsigned int myriota_tlv_count(const void *tlv,
                                unsigned int (*size)(const void *));
 // Get the ith element in a sequnece. Returns NULL if out of bounds.
