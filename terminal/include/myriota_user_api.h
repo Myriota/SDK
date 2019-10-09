@@ -98,6 +98,10 @@ time_t BeforeSatelliteTransmit(time_t After, time_t Before);
 /// example, if the \p MessageSize exceeds #MAX_MESSAGE_SIZE.
 float ScheduleMessage(const uint8_t *Message, size_t MessageSize);
 
+/// Save all scheduled messages before planned module reset.
+/// Saved messages will be transmitted after reset.
+void SaveMessages(void);
+
 /// @}
 
 /// @defgroup Delay Delays
@@ -105,6 +109,8 @@ float ScheduleMessage(const uint8_t *Message, size_t MessageSize);
 
 /// Delay for a number of milliseconds
 void Delay(uint32_t mSec);
+/// Delay for a number of microseconds
+void MicroSecondDelay(uint32_t uSec);
 /// Put the system in lower power mode for Sec seconds.
 /// The current job won't be interrupted by other jobs while sleeping.
 void Sleep(uint32_t Sec);

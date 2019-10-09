@@ -15,13 +15,13 @@
 export BOARD?=MyriotaDB
 
 include $(ROOTDIR)/terminal/g2/flags.mk
-include $(ROOTDIR)/terminal/orbit_model.mk
+include $(ROOTDIR)/terminal/builtin.mk
 
 PROGRAM_NAME?=app
 PROGRAM_NAME_BIN:=$(PROGRAM_NAME).bin
 PROGRAM_NAME_ELF:=$(PROGRAM_NAME).elf
 
-BSP_PATH:=$(ROOTDIR)/terminal/g2/boards/$(BOARD)
+BSP_PATH?=$(ROOTDIR)/terminal/g2/boards/$(BOARD)
 
 ifeq ($(SATELLITES),Lab)
 CFLAGS +=-DLAB_TEST
@@ -34,7 +34,14 @@ endif
 LIB_DIR:=$(ROOTDIR)/terminal/g2
 LIBS:=$(LIB_DIR)/user_app_lib.a
 
-OBJ_LIST += $(orbit_model).o $(BSP_PATH)/bsp.o
+# For backward compatibility
+ifeq (,$(findstring bsp.c,$(APP_SRC)))
+APP_SRC+=$(BSP_PATH)/bsp.c
+endif
+APP_OBJ:=$(patsubst %.c, %.o, $(APP_SRC))
+SDK_OBJ:=$(builtin).o
+OBJ_LIST+=$(APP_OBJ)
+OBJ_LIST+=$(SDK_OBJ)
 
 $(PROGRAM_NAME): $(PROGRAM_NAME_BIN)
 
@@ -43,11 +50,6 @@ $(PROGRAM_NAME_BIN): $(PROGRAM_NAME_ELF)
 
 $(PROGRAM_NAME_ELF): $(LIBS) $(OBJ_LIST)
 	$(CC) $(OBJ_LIST) -Wl,--whole-archive $(LIBS) $(LDFLAGS) -Wl,--no-whole-archive -o $@
-
-# Specify the serial port using the -p option if it is different from the default port
-# chosen by updater.py. See updater.py --help
-run: $(PROGRAM_NAME_BIN)
-	updater.py -f $< -s
 
 clean:
 	rm -f $(OBJ_LIST) $(PROGRAM_NAME_BIN) $(PROGRAM_NAME_ELF)

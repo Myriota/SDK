@@ -12,23 +12,31 @@
 # limitations under the License.
 
 # Satellites to be used
-SATELLITES?=43215 SKA
+SATELLITES?=43215 PermitAll SKA
 
 ifeq (SATELLITES, "")
 	SATELLITES:=/dev/null
 endif
 
+ACCESS_NODES_BASEURL?=https://static.myriota.com/access_nodes
+ACCESS_NODE_REVISION?=r9
+
 .PHONY: $(SATELLITES)
 $(SATELLITES):
-	curl -f https://static.myriota.com/access_nodes/r3/$@ --output $@ || \
+	curl -f $(ACCESS_NODES_BASEURL)/$(ACCESS_NODE_REVISION)/$@ --output $@ || \
 		([ -e $@ ] && echo "Using old satellite $@") || \
 		(echo "\e[33mError: Satellite $@ not found\e[0m"; exit 1)
 
-orbit_model:=$(shell mktemp)
+builtin:=$(shell mktemp)
 
 # create orbit_model.c source with updated orbit models
-$(orbit_model).c: $(SATELLITES)
+$(builtin).c: $(SATELLITES)
 	printf "#include <inttypes.h>\n" > $@
-	printf "const uint8_t* BuiltinAccessNodeGet() { static const uint8_t b[] = {" >> $@
-	cat $^ | xxd -i | tr -d \\n >> $@
-	printf "}; return b; }" >> $@
+	printf "const uint8_t* BuiltinNetworkInfo() { static const uint8_t b[] = {" >> $@
+	dd if=/dev/zero bs=1 count=1 status=none | cat $^ - | xxd -i | tr -d \\n >> $@
+	printf "}; return b; }\n" >> $@
+	printf "const uint8_t* BuildKey() { static const uint8_t k[] = {" >> $@
+	openssl rand 16 | xxd -i | tr -d \\n >> $@
+	printf "," >> $@
+	printf "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" | xxd -i | tr -d \\n >> $@
+	printf "}; return k; }" >> $@

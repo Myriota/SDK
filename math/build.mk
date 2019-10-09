@@ -30,7 +30,7 @@ myriotamath.a : $(MATH_OBJECTS)
 	ar rcs $@ $(MATH_OBJECTS)
 
 # Header dependency files
-MATH_DEPS := $(patsubst %.mathlib.o, %.d, $(MATH_OBJECTS))
+MATH_DEPS := $(patsubst %.mathlib.o, %.mathlib.d, $(MATH_OBJECTS))
 
 # Include header dependency files "-" ignores files that don't exist
 -include $(MATH_DEPS)

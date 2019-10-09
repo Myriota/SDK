@@ -16,10 +16,12 @@ PROGRAM_NAME = event
 
 ROOTDIR ?= $(abspath ../..)
 
-OBJ_LIST = main.o
+APP_SRC = main.c
 
 ifeq (sim, $(notdir $(PLATFORM)))
-	OBJ_LIST+=sim.o
+	APP_SRC += sim.c
+else
+	APP_SRC += $(BSP_PATH)/bsp.c
 endif
 
 include $(ROOTDIR)/terminal/app.mk

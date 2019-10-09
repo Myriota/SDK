@@ -24,6 +24,7 @@
 /// href="https://github.com/Myriota/SDK/blob/master/terminal/g2/boards/MyriotaDB/bsp.c">Myriota
 /// development board BSP</a>
 ///  is used by default.
+/// Create bsp.c under application folder to override default BSP file
 /// @{
 
 /// Compile time check
@@ -36,7 +37,7 @@
 /// Returns string which contains semicolon separated variables.
 /// - GNSSFIX
 ///     - 0: skip system GNSS fix
-///     - 1: get time only
+///     - 1: get time only after location has been fixed or set
 ///     - unset: do system GNSS fix
 ///     .
 /// - DUMPTX

@@ -16,5 +16,10 @@ PROGRAM_NAME = tracker
 
 ROOTDIR ?= $(abspath ../..)
 
-OBJ_LIST=main.o
+APP_SRC = main.c
+
+ifneq (sim, $(notdir $(PLATFORM)))
+	APP_SRC += $(BSP_PATH)/bsp.c
+endif
+
 include $(ROOTDIR)/terminal/app.mk

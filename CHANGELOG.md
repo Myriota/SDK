@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.1.4
+
+Fixes:
+
+- Fixes an issue where LEUART interface may lose characters if deinitialised straightaway after write
+
+Improvements:
+
+- Adds API to save user messages to continue transmission after reset
+- Adds support to recover scheduled user messages when the system resets due to unrecoverable failures
+- Adds support to send diagnostics messages when the system resets due to unrecoverable failures
+- Adds support to log the PC address where watchdog timeout occurs
+- Adds logging of reset reason
+- When GNSSFIX is set to 1, GNSS fix only gets time after location has been fixed or set
+- Disables the radio completely when calling `RFTestTxStop`
+- Adds API to do micro-second delay
+- Adds dumping of module ID to the log
+- Removes `make run` build target
+- Cleans up development board BSP BoardBatteryVoltGet implementation
+- Adds support to include custom BSP (`bsp.c`) from application folder
+
 ## 1.1.3
 
 API changes:

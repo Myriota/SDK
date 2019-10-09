@@ -16,6 +16,6 @@ PROGRAM_NAME = rf_test
 
 ROOTDIR ?= $(abspath ../..)
 
-OBJ_LIST = main.o
+APP_SRC = $(BSP_PATH)/bsp.c main.c
 
 include $(ROOTDIR)/terminal/app.mk

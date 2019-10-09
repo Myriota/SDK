@@ -32,26 +32,30 @@ errors = {0:  'Internal test',
           7:  'Assertion failure',
           8:  'Memory error',
           9:  'Stack low in space',
-          10: 'Stack overflow'}
+          10: 'Stack overflow',
+          11: 'Module ID',
+          12: 'Reset reason'}
 
 unpack_strings = {
     'Internal test':'<II',
-    'Watchdog reset': '<II',
+    'Watchdog reset': '<III',
     'System states': '<IIIIIIIIIIII',
     'MCU faults': '<IIII',
     'Application starts': '<QI',
     'Assertion failure': '<II',
     'Stack low in space': '<II',
-    'Stack overflow': '<I'
+    'Stack overflow': '<I',
+    'Module ID': '<I',
+    'Reset reason': '<I',
 }
 
 contents = {
     'Internal test': ['Test1', 'Test2'],
-    'Watchdog reset': ['LastJobId', 'Timeout counter'],
+    'Watchdog reset': ['Job ID', 'PC', 'LR'],
     'System states':
-        ['Number of transmissions', 'Wakeup times',
+        ['Reset reason', 'Wakeup times',
          'Last GNSS fix time', 'Last job ID',
-         'Watchdog timeouted job ID', 'Watchdog timeout counter',
+         'Watchdog timeouted job ID', 'Watchdog timeout address',
          'Last transmission time', 'Last log ID',
          'GNSS fix failures', 'GNSS fix successes',
          'GNSS total fix time', 'Number of user messages'],
@@ -59,7 +63,9 @@ contents = {
     'Application starts': ['Build hash', 'SDK version'],
     'Assertion failure': ['Return address', 'Line number'],
     'Stack low in space': ['JobId', 'StackUsage'],
-    'Stack overflow': ['JobId']
+    'Stack overflow': ['JobId'],
+    'Module ID': ['Module ID'],
+    'Reset reason': ['Reset reason']
 }
 
 

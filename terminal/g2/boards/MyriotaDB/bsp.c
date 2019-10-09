@@ -19,6 +19,8 @@
 #define LED_PIN PIN_GPIO3
 #define GNSS_EN_PIN PIN_GPIO4
 #define ANT_SEL_PIN PIN_GPIO6
+#define BATTERY_MEASUREMENT_EN_PIN PIN_GPIO2
+#define BATTERY_MEASUREMENT_ADC_PIN PIN_ADC1
 #define DEBUG_INTERFACE UART_0
 #define DEBUG_BAUDRATE 115200
 #define MODULE_BAND_PIN PIN_BAND
@@ -40,8 +42,8 @@ __attribute__((weak)) char *BoardEnvGet() {
 
 int BoardInit(void) {
   BoardLEDDeinit();
-  // Avoid current leak from the battery measurement switch when floating
-  GPIOSetModeInput(PIN_GPIO2, GPIO_PULL_DOWN);
+  // Avoid current leak from the battery measurement switch if floating
+  GPIOSetModeInput(BATTERY_MEASUREMENT_EN_PIN, GPIO_PULL_DOWN);
   return 0;
 }
 
@@ -59,19 +61,16 @@ __attribute__((weak)) int BoardStart(void) {
   return 0;
 }
 
+// If battery measurement is not supported, both voltage and the return
+// value should be 0.
 int BoardBatteryVoltGet(uint32_t *mv) {
 // Compensate for the voltage drop across the diode Q202
 #define VEXT_COMPENSATE 15    // [mV]
 #define SWITCH_SETTLE_TIME 1  // [ms]
 #define AVERAGE_COUNT 3
 
-  const uint8_t ADCPin = PIN_ADC1;
-  const uint8_t ControlPin =
-      PIN_GPIO2;  // Pin to control the switch for the measurement
-
-  // Check development board revision
-  GPIOSetModeInput(PIN_ADC1, GPIO_NO_PULL);
-  bool IsRev1 = (GPIOGet(PIN_ADC1) == GPIO_HIGH);
+  const uint8_t ADCPin = BATTERY_MEASUREMENT_ADC_PIN;
+  const uint8_t ControlPin = BATTERY_MEASUREMENT_EN_PIN;
 
   GPIOSetModeOutput(ControlPin);
   GPIOSetHigh(ControlPin);
@@ -79,21 +78,18 @@ int BoardBatteryVoltGet(uint32_t *mv) {
 
   uint32_t batt = 0, volt = 0;
   for (unsigned i = 0; i < AVERAGE_COUNT; i++) {
-    ADCReference Ref;
-    if (IsRev1)
-      Ref = ADC_REF_VIO;  // May clip if battery voltage is higher than VIO
-    else
-      Ref = ADC_REF_2V5;  // Battery voltage won't be higher than 5V
+    ADCReference Ref = ADC_REF_2V5;  // Battery voltage won't be higher than 5V
     if (ADCGetVoltage(ADCPin, Ref, &batt)) {
       GPIOSetModeInput(ControlPin, GPIO_PULL_DOWN);
       return -1;
     } else {
-      volt += batt + VEXT_COMPENSATE;
+      volt += batt;
     }
   }
   GPIOSetModeInput(ControlPin, GPIO_PULL_DOWN);
   *mv = volt / AVERAGE_COUNT;
-  if (!IsRev1) *mv *= 2;  // Dividor on the development board
+  *mv *= 2;  // Divider on the development board
+  *mv += VEXT_COMPENSATE;
   return 0;
 }
 

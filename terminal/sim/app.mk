@@ -13,11 +13,14 @@
 
 
 include $(ROOTDIR)/terminal/sim/flags.mk
-include $(ROOTDIR)/terminal/orbit_model.mk
+include $(ROOTDIR)/terminal/builtin.mk
 
 LIB_DIR:=$(ROOTDIR)/terminal/sim
 LIBS:=$(LIB_DIR)/sim.so
-OBJ_LIST+=$(orbit_model).o
+APP_OBJ:=$(patsubst %.c, %.o, $(APP_SRC))
+SDK_OBJ:=$(builtin).o
+OBJ_LIST+=$(APP_OBJ)
+OBJ_LIST+=$(SDK_OBJ)
 
 $(PROGRAM_NAME) : $(OBJ_LIST) $(LIBS)
 	$(CC) $(OBJ_LIST) $(LIBS) $(LDFLAGS) -o $@
