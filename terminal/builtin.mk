@@ -12,7 +12,7 @@
 # limitations under the License.
 
 # Satellites to be used
-SATELLITES?=43215 PermitAll SKA
+SATELLITES?=DefaultNetworkInfo
 
 ifeq (SATELLITES, "")
 	SATELLITES:=/dev/null
@@ -28,15 +28,24 @@ $(SATELLITES):
 		(echo "\e[33mError: Satellite $@ not found\e[0m"; exit 1)
 
 builtin:=$(shell mktemp)
+buildkey:=$(shell mktemp -u)
 
-# create orbit_model.c source with updated orbit models
+$(buildkey):
+	openssl rand 16 > $@
+	cat /dev/zero | head -c16 >> $@
+	printf "BuildKey: "; cat $@ | xxd -ps -c32
+
+# create built-in source with updated orbit models
 $(builtin).c: $(SATELLITES)
 	printf "#include <inttypes.h>\n" > $@
 	printf "const uint8_t* BuiltinNetworkInfo() { static const uint8_t b[] = {" >> $@
-	dd if=/dev/zero bs=1 count=1 status=none | cat $^ - | xxd -i | tr -d \\n >> $@
+	dd if=/dev/zero bs=1 count=1 status=none | cat $(SATELLITES) - | xxd -i | tr -d \\n >> $@
 	printf "}; return b; }\n" >> $@
-	printf "const uint8_t* BuildKey() { static const uint8_t k[] = {" >> $@
-	openssl rand 16 | xxd -i | tr -d \\n >> $@
-	printf "," >> $@
-	printf "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" | xxd -i | tr -d \\n >> $@
+
+# create build key source for simulation
+$(buildkey).c: $(buildkey)
+	printf "#include <inttypes.h>\n" > $@
+	printf "const uint8_t* BuildKey() { static const uint8_t k[] = {" >> $@	
+	cat $(buildkey) | xxd -i | tr -d \\n >> $@	
 	printf "}; return k; }" >> $@
+

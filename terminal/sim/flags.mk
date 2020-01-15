@@ -14,5 +14,5 @@
 
 ##Default c compiler and flags
 CC = gcc
-CFLAGS = -std=gnu99 -g -Wall -Werror -I$(ROOTDIR) -I$(ROOTDIR)/terminal/include -I. -I$(ROOTDIR)/terminal/$(PLATFORM)/include -DDEBUG
-LDFLAGS = -lm -lcrypto -Wall -Werror -fdata-sections -ffunction-sections
+CFLAGS = -std=gnu99 -g -Wall -Werror -fsanitize=address -I$(ROOTDIR) -I$(ROOTDIR)/terminal/include -I. -I$(ROOTDIR)/terminal/$(PLATFORM)/include -DDEBUG
+LDFLAGS = -lasan -lm -lcrypto -Wall -Werror -fdata-sections -ffunction-sections

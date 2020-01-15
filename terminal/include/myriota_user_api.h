@@ -46,6 +46,10 @@ void SDKVersionGet(uint32_t *Major, uint32_t *Minor, uint32_t *Patch);
 /// part number. Returns null if module ID is not available.
 char *ModuleIDGet(void);
 
+/// Returns the string of registration code. Returns null if registration code
+/// is not available.
+char *RegistrationCodeGet(void);
+
 /// @}
 
 /// @defgroup App_init Application initialisation

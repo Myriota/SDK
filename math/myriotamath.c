@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "math/myriotamath.h"
+#include <assert.h>
 #include <stdio.h>
 
 double myriota_modulus(const double arg1, const double arg2) {
@@ -133,10 +134,8 @@ myriota_decimal myriota_complex_norm(myriota_complex x) {
 }
 
 double myriota_sinc(double t) {
-  if (fabs(t) < 5e-3)
-    return 1.0 - t * t * (1.0 / 6 - 1.0 / 120 * t * t);
-  else
-    return sin(pi * t) / (pi * t);
+  if (fabs(t) < 5e-3) return 1.0 - t * t * (1.0 / 6 - 1.0 / 120 * t * t);
+  return sin(pi * t) / (pi * t);
 }
 
 unsigned long myriota_factorial(unsigned int n) {
@@ -156,68 +155,6 @@ double myriota_besselI(int n, double x) {
     m++;
   }
   return sum;
-}
-
-// Convert hexidecimal character to number in the interval [0,15]
-// Returns 1 (the number of characters scanned) on success and 0 if the
-// character is not hexidecimal
-int myriota_hex_character_to_number(const char h, int *n) {
-  if (h >= '0' && h <= '9') {
-    *n = h - '0';
-    return 1;
-  }
-  if (h >= 'A' && h <= 'F') {
-    *n = h - 'A' + 10;
-    return 1;
-  }
-  if (h >= 'a' && h <= 'f') {
-    *n = h - 'a' + 10;
-    return 1;
-  }
-  return 0;
-}
-
-bool myriota_is_hex(const char *s) {
-  int n;
-  for (int i = 0; i < strlen(s); i++)
-    if (myriota_hex_character_to_number(s[i], &n) == 0) return false;
-  return true;
-}
-
-int myriota_hex_to_byte(const char *h, uint8_t *b) {
-  int h0;
-  if (myriota_hex_character_to_number(h[0], &h0) != 1) return 0;
-  int h1;
-  if (myriota_hex_character_to_number(h[1], &h1) != 1) return 0;
-  *b = 0;
-  *b = *b | h1;
-  *b = *b | (h0 << 4);
-  return 2;
-}
-
-int myriota_n_hex_to_buf(const char *s, const size_t n, void *buf) {
-  uint8_t *bytes = (uint8_t *)buf;
-  const size_t slen = strlen(s);
-  const size_t m = n > slen ? slen : n;
-  if (m % 2 != 0) return 0;  // n must be even
-  for (const char *c = s; c < s + m; c += 2, bytes++)
-    if (myriota_hex_to_byte(c, bytes) != 2) return 0;  // scan failed
-  return m;                                            // success
-}
-
-int myriota_hex_to_buf(const char *s, void *buf) {
-  return myriota_n_hex_to_buf(s, strlen(s), buf);
-}
-
-int myriota_buf_to_hex(const void *buf, const size_t buf_size, char *s) {
-  const uint8_t *bytes = (const uint8_t *)buf;
-  for (size_t i = 0; i < buf_size; i++) s += sprintf(s, "%02x", bytes[i]);
-  return buf_size * 2;
-}
-
-void myriota_print_hex(const void *buf, int length) {
-  const uint8_t *b = (const uint8_t *)buf;
-  for (int i = 0; i < length; i++) printf("%02x", b[i]);
 }
 
 // converts integer in the range 0 - 63 to a base64 character.
@@ -325,31 +262,6 @@ int myriota_zbase32_to_buf(const char *s, void *buf) {
   return myriota_n_zbase32_to_buf(s, strlen(s), buf);
 }
 
-// Reverses bits in a 32-bit word.
-static uint32_t reverse_bits(uint32_t x) {
-  x = ((x & 0x55555555) << 1) | ((x >> 1) & 0x55555555);
-  x = ((x & 0x33333333) << 2) | ((x >> 2) & 0x33333333);
-  x = ((x & 0x0F0F0F0F) << 4) | ((x >> 4) & 0x0F0F0F0F);
-  x = (x << 24) | ((x & 0xFF00) << 8) | ((x >> 8) & 0xFF00) | (x >> 24);
-  return x;
-}
-
-uint32_t myriota_crc32(const void *data, size_t length, uint32_t offset) {
-  uint32_t crc = ~offset;
-  const uint8_t *bytes = (uint8_t *)data;
-  for (int i = 0; i < length; i++) {
-    uint32_t b = reverse_bits(bytes[i]);
-    for (int j = 0; j < 8; j++) {
-      if ((int32_t)(crc ^ b) < 0)
-        crc = (crc << 1) ^ 0x04C11DB7;
-      else
-        crc = crc << 1;
-      b = b << 1;
-    }
-  }
-  return reverse_bits(~crc);
-}
-
 int myriota_random_bernoulli(double p) {
   double r = myriota_random_uniform();
   if (r < p) return 1;
@@ -380,10 +292,8 @@ double myriota_continued_fraction(double x, unsigned int size, int *a) {
 }
 
 long long gcd(long long a, long long b) {
-  if (b == 0)
-    return abs(a);
-  else
-    return gcd(abs(b), abs(a) % abs(b));
+  if (b == 0) return abs(a);
+  return gcd(abs(b), abs(a) % abs(b));
 }
 
 myriota_rational make_myriota_rational(long long a, long long b) {
@@ -430,10 +340,8 @@ myriota_rational myriota_rational_approximation(double x, double tol, int qmax,
   if (fabs(x * r[0].q - r[0].p) < fabs(r[0].q * tol)) return r[0];
   for (int i = 1; i < k; i++) {
     // printf(" %d/%d ", r[i].p, r[i].q);
-    if (abs(r[i].q) > qmax)
-      return r[i - 1];
-    else if (fabs(x * r[i].q - r[i].p) < fabs(r[i].q * tol))
-      return r[i];
+    if (abs(r[i].q) > qmax) return r[i - 1];
+    if (fabs(x * r[i].q - r[i].p) < fabs(r[i].q * tol)) return r[i];
   }
   return r[k - 1];
 }
@@ -486,57 +394,9 @@ double myriota_solve(double (*f)(double, void *), void *fdata, double y,
 
 double myriota_unwrap(const double value, const double previous_value) {
   double d = myriota_fracpart_scaled(value - previous_value, 2 * pi);
-  if (d > pi)
-    return d + previous_value - 2 * pi;
-  else if (d < -pi)
-    return d + previous_value + 2 * pi;
-  else
-    return d + previous_value;
-}
-
-static int cmp_double(const void *ap, const void *bp) {
-  double a = *(double *)ap;
-  double b = *(double *)bp;
-  if (a > b)
-    return 1;
-  else if (a < b)
-    return -1;
-  else
-    return 0;
-}
-
-double myriota_select_double(const int k, double *a, size_t nitems) {
-  qsort(a, nitems, sizeof(double), cmp_double);
-  return a[k];
-}
-
-static int cmp_int32(const void *a, const void *b) {
-  return (*(int32_t *)a - *(int32_t *)b);
-}
-
-int32_t myriota_select_int32(const int k, int32_t *a, size_t nitems) {
-  qsort(a, nitems, sizeof(int32_t), cmp_int32);
-  return a[k];
-}
-
-double myriota_median_double(double *a, const size_t nitems) {
-  if (nitems % 2 != 0)
-    return myriota_select_double(nitems / 2, a, nitems);
-  else {
-    const double upper = myriota_select_double(nitems / 2, a, nitems);
-    const double lower = myriota_select_double(nitems / 2 - 1, a, nitems);
-    return (lower + upper) / 2.0;
-  }
-}
-
-int32_t myriota_median_int32(int32_t *a, const size_t nitems) {
-  if (nitems % 2 != 0)
-    return myriota_select_int32(nitems / 2, a, nitems);
-  else {
-    const int64_t upper = myriota_select_int32(nitems / 2, a, nitems);
-    const int64_t lower = myriota_select_int32(nitems / 2 - 1, a, nitems);
-    return (lower + upper) / 2;
-  }
+  if (d > pi) return d + previous_value - 2 * pi;
+  if (d < -pi) return d + previous_value + 2 * pi;
+  return d + previous_value;
 }
 
 // function used internally by myriota_brent
@@ -1020,4 +880,159 @@ int myriota_sort_unique(void *base, size_t nitems, size_t size,
     c++;
   }
   return c;
+}
+
+bool myriota_interval_empty(const myriota_interval a) { return a.min > a.max; }
+
+myriota_interval myriota_interval_intersect_pairwise(const myriota_interval a,
+                                                     const myriota_interval b) {
+  return (myriota_interval){fmax(a.min, b.min), fmin(a.max, b.max)};
+}
+
+int myriota_interval_union_pairwise(const myriota_interval a,
+                                    const myriota_interval b,
+                                    myriota_interval c[2]) {
+  const myriota_interval empty = {1, -1};
+  if (myriota_interval_empty(a) && myriota_interval_empty(b)) return 0;
+  if (myriota_interval_empty(a)) {
+    c[0] = b;
+    c[1] = empty;
+    return 1;
+  }
+  if (myriota_interval_empty(b)) {
+    c[0] = a;
+    c[1] = empty;
+    return 1;
+  }
+  const myriota_interval i = myriota_interval_intersect_pairwise(a, b);
+  if (myriota_interval_empty(i)) {
+    c[0] = a;
+    c[1] = b;
+    return 2;
+  }
+  c[0] = (myriota_interval){fmin(a.min, b.min), fmax(a.max, b.max)};
+  c[1] = empty;
+  return 1;
+}
+
+// sort in order of maximum interval then minimum interval
+static int cmp_interval(const void *_a, const void *_b) {
+  const myriota_interval *a = _a;
+  const myriota_interval *b = _b;
+  if (a->max < b->max) return -1;
+  if (a->max > b->max) return 1;
+  if (a->min < b->min) return -1;
+  if (a->min > b->min) return 1;
+  return 0;
+}
+
+int myriota_interval_compress(myriota_interval *a, const int alen) {
+  // sort in order of maximum
+  qsort(a, alen, sizeof(myriota_interval), cmp_interval);
+
+  // combine pairwise intervals
+  for (int i = alen - 1; i > 0; i--)
+    myriota_interval_union_pairwise(a[i - 1], a[i], &a[i - 1]);
+
+  // remove empty intervals
+  int l = 0;
+  for (int i = 0; i < alen; i++) {
+    if (myriota_interval_empty(a[i])) continue;
+    a[l] = a[i];
+    l++;
+  }
+  return l;
+}
+
+int myriota_interval_intersect(const myriota_interval *a, const int alen,
+                               const myriota_interval *b, const int blen,
+                               myriota_interval *c) {
+  myriota_interval tmp[alen + blen];
+  int clen = 0;
+  for (int i = 0; i < alen; i++) {
+    for (int j = 0; j < blen; j++) {
+      myriota_interval d = myriota_interval_intersect_pairwise(a[i], b[j]);
+      if (myriota_interval_empty(d)) continue;
+      clen = myriota_interval_union(tmp, clen, &d, 1, tmp);
+    }
+  }
+  memcpy(c, tmp, clen * sizeof(myriota_interval));
+  return clen;
+}
+
+int myriota_interval_union(const myriota_interval *a, const int alen,
+                           const myriota_interval *b, const int blen,
+                           myriota_interval *c) {
+  for (int i = 0; i < alen; i++) c[i] = a[i];
+  for (int i = 0; i < blen; i++) c[i + alen] = b[i];
+  return myriota_interval_compress(c, alen + blen);
+}
+
+bool myriota_interval_contains(const myriota_interval *A, const int Alen,
+                               double p) {
+  for (int i = 0; i < Alen; i++) {
+    if (p < A[i].min) return false;
+    if (p <= A[i].max) return true;
+  }
+  return false;
+}
+
+bool myriota_interval_intersects(const myriota_interval *A, const int Alen,
+                                 const myriota_interval b) {
+  if (myriota_interval_empty(b)) return false;
+  for (int i = 0; i < Alen; i++) {
+    if (b.max < A[i].min) return false;
+    if (b.min <= A[i].max) return true;
+  }
+  return false;
+}
+
+int myriota_interval_complement(const myriota_interval a,
+                                myriota_interval b[2]) {
+  // ~entire == empty
+  if ((myriota_isinf(a.min) < 0) && (myriota_isinf(a.max) > 0)) return 0;
+
+  // ~empty == entire
+  if (myriota_interval_empty(a)) {
+    b[0].min = -INFINITY;
+    b[0].max = INFINITY;
+    return 1;
+  }
+
+  if (myriota_isinf(a.min) < 0) {
+    b[0].min = a.max;
+    b[0].max = INFINITY;
+    return 1;
+  }
+
+  if (myriota_isinf(a.max) > 0) {
+    b[0].min = -INFINITY;
+    b[0].max = a.min;
+    return 1;
+  }
+
+  b[0].min = -INFINITY;
+  b[0].max = a.min;
+  b[1].min = a.max;
+  b[1].max = INFINITY;
+  return 2;
+}
+
+double myriota_interval_length(const myriota_interval *A, const int Alen) {
+  double d = 0;
+  for (int i = 0; i < Alen; i++) d += A[i].max - A[i].min;
+  return d;
+}
+
+double myriota_interval_uniform(const myriota_interval *A, const int Alen) {
+  if (Alen == 0) return NAN;  // must have some point in the interval
+  const double len = myriota_interval_length(A, Alen);
+  if (len == 0) return A[rand() % Alen].min;  // point mass case
+  double u = myriota_random_uniform() * len;
+  for (int i = 0; i < Alen; i++) {
+    const double a = A[i].max - A[i].min;
+    if (u < a) return A[i].min + u;
+    u = u - a;
+  }
+  return A[Alen - 1].max;
 }

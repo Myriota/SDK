@@ -18,12 +18,12 @@ include $(ROOTDIR)/terminal/builtin.mk
 LIB_DIR:=$(ROOTDIR)/terminal/sim
 LIBS:=$(LIB_DIR)/sim.so
 APP_OBJ:=$(patsubst %.c, %.o, $(APP_SRC))
-SDK_OBJ:=$(builtin).o
+SDK_OBJ:=$(builtin).o $(buildkey).o
 OBJ_LIST+=$(APP_OBJ)
 OBJ_LIST+=$(SDK_OBJ)
 
 $(PROGRAM_NAME) : $(OBJ_LIST) $(LIBS)
-	$(CC) $(OBJ_LIST) $(LIBS) $(LDFLAGS) -o $@
+	$(CC) $(OBJ_LIST) $(LDFLAGS) $(LIBS) $(LDFLAGS) -o $@
 
 clean:
 	rm -f $(OBJ_LIST) $(PROGRAM_NAME)

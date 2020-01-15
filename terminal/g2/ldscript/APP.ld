@@ -11,8 +11,8 @@
 
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x34000, LENGTH = 49152
-  RAM (rwx)  : ORIGIN = 0x20007000, LENGTH = 4096
+  FLASH (rx) : ORIGIN = 0x24000, LENGTH = 38K
+  RAM (rwx)  : ORIGIN = 0x20007000, LENGTH = 4K
 }
 
 ENTRY(SDKUserAppInit)
@@ -21,6 +21,8 @@ SECTIONS
 {
   .text :
   {
+    KEEP(*(__user_build_key))
+    KEEP(*(__user_app_id))
     KEEP(*(__user_app))
     *(.text.SDKUserAppInit);
     *(.text*)

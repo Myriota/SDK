@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.0
+
+Fixes:
+
+- Fixes an issue where the module may not sleep properly
+- Fixes an issue where user job may hang after disabling debug output
+
+ Improvements:
+
+- Adds OTA network updates support
+- Adds more system diagnostics
+- Adds hardware watchdog support
+- Adds API to get registration code
+- Updates updater.py to support new flash layout
+
 ## 1.1.4
 
 Fixes:

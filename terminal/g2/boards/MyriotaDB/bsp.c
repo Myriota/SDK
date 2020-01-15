@@ -52,8 +52,9 @@ __attribute__((weak)) int BoardStart(void) {
   Delay(200);
   LedTurnOff();
   GPIOSetModeInput(MODULE_BAND_PIN, GPIO_NO_PULL);
-  printf("Myriota development board %s variant %s\n",
-         GPIOGet(MODULE_BAND_PIN) == GPIO_HIGH ? "VHF" : "UHF", ModuleIDGet());
+  printf("Myriota development board %s variant %s %s\n",
+         GPIOGet(MODULE_BAND_PIN) == GPIO_HIGH ? "VHF" : "UHF", ModuleIDGet(),
+         RegistrationCodeGet());
   char *EnvStr = BoardEnvGet();
   if (EnvStr && strlen(EnvStr)) {
     printf("Using env %s\n", EnvStr);
@@ -148,7 +149,10 @@ void *BoardDebugInit(void) {
   return DebugHandle;
 }
 
-void BoardDebugDeinit(void) { UARTDeinit(DebugHandle); }
+void BoardDebugDeinit(void) {
+  UARTDeinit(DebugHandle);
+  DebugHandle = NULL;
+}
 
 int BoardDebugWrite(const uint8_t *Tx, size_t Length) {
   return UARTWrite(DebugHandle, Tx, Length);

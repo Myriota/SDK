@@ -20,7 +20,7 @@ import time
 import serial
 import argparse
 import os
-
+from io import BytesIO
 
 def open_serial_port(portname):
     try:
@@ -180,15 +180,7 @@ def xmodem_send(serial, file, quiet=True):
         return False
     return True
 
-
-def update_image(ser, command, filename):
-    try:
-        stream = open(filename, 'rb')
-    except IOError:
-        sys.stderr.write('failed to open the file\n')
-        return False
-    print('\nProgramming %s (%dK) '
-          % (filename, (os.path.getsize(filename)+1023)/1024), end='')
+def update_stream(ser, command, stream):
     sys.stdout.flush()
     retries = 3
     while True:
@@ -211,6 +203,16 @@ def update_image(ser, command, filename):
 
     sys.stderr.write('failed\n')
     return False
+
+def update_image(ser, command, filename):
+    try:
+        stream = open(filename, 'rb')
+    except IOError:
+        sys.stderr.write('failed to open the file\n')
+        return False
+    print('\nProgramming %s (%dK) '
+          % (filename, (os.path.getsize(filename)+1023)/1024), end='')
+    return update_stream(ser, command, stream)
 
 
 def jump_to_app(ser):
@@ -245,6 +247,7 @@ def get_version(ser):
     print(out.decode('utf-8'))
 
 ser = None
+FIRMWARE_START_ADDRESS=0x4000
 
 
 def main():
@@ -306,11 +309,17 @@ def main():
 
     update_commands = []
     if args.system_image_name:
-        update_commands.append(['u', args.system_image_name])
+        update_commands.append(['a%x' % FIRMWARE_START_ADDRESS, args.system_image_name])
     if args.user_app_name:
         update_commands.append(['s', args.user_app_name])
     if args.raw_commands is not None:
         update_commands += args.raw_commands
+
+    # clear network info
+    zero_stream = BytesIO(b'\0\0\0\0\0\0\0\0\0\0')
+    if not update_stream(serial_port, 'o', zero_stream):
+        print('Error clearing network info')
+        sys.exit(1)
 
     if not update_commands:
         parser.error("Please specify the files to program.")

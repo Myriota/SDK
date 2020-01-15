@@ -24,53 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-// double, float, etc. Default is double.
-// define MYRIOTA_DECIMAL at compile time if you want to change this.
-#ifndef MYRIOTA_DECIMAL
-#define MYRIOTA_DECIMAL double
-#endif
-
-// Force a compilation error if condition is true
-#ifndef BUILD_BUG_ON
-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2 * !!(condition)]))
-#endif
-
-#define field_size(type, member) sizeof(((type *)0)->member)
-
-// Get number of element in an array
-#define NUM_ELEMS(array) (sizeof(array) / sizeof((array)[0]))
-
-// Myriota's floating point and complex floating point types
-typedef MYRIOTA_DECIMAL myriota_decimal;
-typedef MYRIOTA_DECIMAL _Complex myriota_complex;
-
-// Approximation of the irrational number
-#define pi 3.14159265358979323846
-
-// square root of 2.
-#define sqrt2 1.41421356237
-
-// square root of 2 divided by 2.
-// equivalently the reciprocal of sqrt(2.0)
-#define sqrt2on2 (sqrt2 / 2.0)
-
-#define myriota_free(x) (free((void *)x))
+#include "math/myriotacommon.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-// Print error function, line, message and then exit
-#ifndef error_message_and_exit
-#define error_message_and_exit(message)                            \
-  do {                                                             \
-    fprintf(stderr, "!!%s %d: %s\n", __func__, __LINE__, message); \
-    fflush(stderr);                                                \
-    while (1) {                                                    \
-      exit(EXIT_FAILURE);                                          \
-    }                                                              \
-  } while (0)
 #endif
 
 // The factional part of a number
@@ -139,34 +96,6 @@ unsigned long myriota_factorial(unsigned int n);
 // Returns the value of the nth modified Bessel function at x.
 double myriota_besselI(int n, double x);
 
-// Returns true if a string contains only hexidecimal characters
-bool myriota_is_hex(const char *s);
-
-// Converts two hexidecimal characters to byte, i.e number in the
-// interval [0, 255].
-// Returns 2 (the number of characters scanned) on success and 0 if
-// either character is not hexidecimal
-int myriota_hex_to_byte(const char *h, uint8_t *b);
-
-// Parses a hexidecimal string into a buffer of bytes.
-// Returns the number of hexidecimal digits parsed and zero
-// if scan failed, i.e. if the string is not valid hex.
-// The string must contain an even number of character or
-// 0 is returned and no parsing takes place
-int myriota_hex_to_buf(const char *s, void *buf);
-
-// Like myriota_hex_to_buf but scans at most n characters
-// The smaller of n and strlen(s) must be even or 0 is returned
-int myriota_n_hex_to_buf(const char *s, const size_t n, void *buf);
-
-// Writes buffer in hexidecimal format to string. s should been
-// allocated with size at least 2*buf_size+1. Returns number of hexidecimal
-// characters written
-int myriota_buf_to_hex(const void *buf, const size_t buf_size, char *s);
-
-// Print buffer to standard out in hex format
-void myriota_print_hex(const void *buf, int size_bytes);
-
 // Parses a base64 string into a buffer of bytes.
 // The length of s (i.e. strlen(s)) must be a multiple of 4. Returns the number
 // of base64 characters parsed and zero if scan failed, i.e. if the string is
@@ -196,9 +125,6 @@ int myriota_n_zbase32_to_buf(const char *s, const size_t n, void *buf);
 // or -1 is returned. s should be allocated with size at least buf_size*8/5+1.
 // Returns number of zbase32 characters written.
 int myriota_buf_to_zbase32(const void *buf, const size_t buf_size, char *s);
-
-// Standard 32-bit cyclic redudunacy check.
-uint32_t myriota_crc32(const void *data, size_t length, uint32_t offset);
 
 // Returns the (centered) fractional part of x
 //
@@ -235,6 +161,14 @@ static inline int myriota_int_min(int a, int b) { return a < b ? a : b; }
 
 // maximum of two integers
 static inline int myriota_int_max(int a, int b) { return a > b ? a : b; }
+
+// return -1 if -INFINITY or 1 if INFINITY, 0 otherwise
+// Created to circumvent C99 vs C++11 isinf() differences.
+static inline int myriota_isinf(double f) {
+  if (f == -INFINITY) return -1;
+  if (f == INFINITY) return 1;
+  return 0;
+}
 
 // True if array a is in strictly ascending order
 bool myriota_is_strictly_ascending(const int *a, const int size);
@@ -399,14 +333,6 @@ void myriota_rotate(int *array, int size, int n);
 // r is now {1,1,0,0,1,0,1}
 void myriota_msequence(const int N, int *r);
 
-// Return the kth largest element from the array of size nitems
-double myriota_select_double(const int k, double *a, const size_t nitems);
-int32_t myriota_select_int32(const int k, int32_t *a, const size_t nitems);
-
-// Returns the median of an array of size nitems
-double myriota_median_double(double *a, const size_t nitems);
-int32_t myriota_median_int32(int32_t *a, const size_t nitems);
-
 // Returns the discrete Fourier transform of a complex array of length N
 // at frequency f in cycles per sample
 //
@@ -483,14 +409,75 @@ int myriota_matrix_lu(const int M, const int N, const double *A, double *L,
 void myriota_matrix_print(const int M, const int N, const double *A, FILE *f);
 
 // Least sequare fit polynomial a[0] + a[1] t + a[2] t^2 + ... a[r-1] t^r of
-// order r to data x. Both tand x assumed to be arrays of length N.
+// order r to data x. Both t and x assumed to be arrays of length N.
 void myriota_polyfit(const double *t, const double *x, const int N, const int r,
                      double *a);
 
-// Like standard qsort but also removes duplicates. Returns the number of unique
-// elements.
+// Like the standard qsort but also removes duplicates. Returns the number of
+// unique elements.
 int myriota_sort_unique(void *base, size_t nitems, size_t size,
                         int (*compar)(const void *, const void *));
+
+// Represents the closed interval [min, max] of the real line.
+// The interval is empty if min > max
+typedef struct {
+  double min;
+  double max;
+} myriota_interval;
+
+// Returns true if a is empty
+bool myriota_interval_empty(const myriota_interval a);
+
+// Return the intersection of two interval a and b
+myriota_interval myriota_interval_intersect_pairwise(const myriota_interval a,
+                                                     const myriota_interval b);
+
+// Write the union of two interval into c.
+// Return number of intervals in c, ie.g 0 if union in empty, 1 if it contains a
+// single interval, and 2 if the union contains two disjoint intervals
+int myriota_interval_union_pairwise(const myriota_interval a,
+                                    const myriota_interval b,
+                                    myriota_interval c[2]);
+
+// Writes the intersection of two sets of intervals into c
+// c must be allocated with alen + blen items.
+// Returns the number of intervals in c
+int myriota_interval_intersect(const myriota_interval *a, const int alen,
+                               const myriota_interval *b, const int blen,
+                               myriota_interval *c);
+
+// Writes the union of two sets of intervals into c
+// c must be allocated with alen + blen items.
+// Returns the number of intervals in c
+int myriota_interval_union(const myriota_interval *a, const int alen,
+                           const myriota_interval *b, const int blen,
+                           myriota_interval *c);
+
+// Sort intervals a and compress then to minimum possible size.
+// Returns new size.
+int myriota_interval_compress(myriota_interval *a, const int alen);
+
+// Return true if p is contained in the set of intervals A
+// Assumes A is in compressed form as given by myriota_interval_compress
+bool myriota_interval_contains(const myriota_interval *A, const int Alen,
+                               double p);
+
+// Returns true if the interval b intersects with the set of intervals A
+// Assumes A is in compressed form as given by myriota_interval_compress
+bool myriota_interval_intersects(const myriota_interval *A, const int Alen,
+                                 const myriota_interval b);
+
+// Writes the complement of the interval a into interval array b of size 2.
+// Returns the number of intervals written, which is at most 2.
+int myriota_interval_complement(const myriota_interval a, myriota_interval *b);
+
+// Return the sum of the lengths if the intervals in A.
+// Assumes A is in compressed form as given by myriota_interval_compress
+double myriota_interval_length(const myriota_interval *A, const int Alen);
+
+// Returns a number uniformly distributed on the set of intervals A
+// Assumes A is in compressed form as given by myriota_interval_compress
+double myriota_interval_uniform(const myriota_interval *A, const int Alen);
 
 #ifdef __cplusplus
 }

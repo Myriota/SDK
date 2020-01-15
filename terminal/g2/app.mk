@@ -45,8 +45,9 @@ OBJ_LIST+=$(SDK_OBJ)
 
 $(PROGRAM_NAME): $(PROGRAM_NAME_BIN)
 
-$(PROGRAM_NAME_BIN): $(PROGRAM_NAME_ELF)
+$(PROGRAM_NAME_BIN): $(PROGRAM_NAME_ELF) $(buildkey)
 	arm-none-eabi-objcopy -O binary $< $@
+	(printf "0: "; xxd -ps -c32 $(buildkey)) | xxd -r - $@
 
 $(PROGRAM_NAME_ELF): $(LIBS) $(OBJ_LIST)
 	$(CC) $(OBJ_LIST) -Wl,--whole-archive $(LIBS) $(LDFLAGS) -Wl,--no-whole-archive -o $@
