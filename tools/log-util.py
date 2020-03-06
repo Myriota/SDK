@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -68,6 +68,11 @@ contents = {
     'Reset reason': ['Reset reason']
 }
 
+# if using python2, rename raw_input to input
+try:
+    input = raw_input
+except NameError:
+    pass
 
 def dump_bytes(bytes):
     for b in bytes:
@@ -236,7 +241,7 @@ def purge_log(ser):
         ser.write(b'!')
         out = ''
         out = ser.readline()
-        if "purged" in out:
+        if b'purged' in out:
             break
     print('The log has been purged')
 
@@ -288,7 +293,7 @@ def main():
     if args.purge_flag:
         answer = ''
         while answer not in ['y', 'n']:
-            answer = raw_input("Do you want to purge the log [y/n]? ").lower()
+            answer = input("Do you want to purge the log [y/n]? ").lower()
             if answer == 'y':
                 if ser is None:
                     ser = capture_bootloader(portname, args.baud_rate, args.wait_flag)

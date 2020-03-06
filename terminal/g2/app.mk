@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -13,6 +13,9 @@
 
 
 export BOARD?=MyriotaDB
+
+OBJ_DIR:=obj
+NETWORK_INFO_DIR:=network_info
 
 include $(ROOTDIR)/terminal/g2/flags.mk
 include $(ROOTDIR)/terminal/builtin.mk
@@ -34,26 +37,33 @@ endif
 LIB_DIR:=$(ROOTDIR)/terminal/g2
 LIBS:=$(LIB_DIR)/user_app_lib.a
 
+$(shell mkdir -p $(OBJ_DIR))
+
 # For backward compatibility
 ifeq (,$(findstring bsp.c,$(APP_SRC)))
 APP_SRC+=$(BSP_PATH)/bsp.c
 endif
-APP_OBJ:=$(patsubst %.c, %.o, $(APP_SRC))
+APP_OBJ:=$(patsubst %.c, $(OBJ_DIR)/%.o, $(APP_SRC))
 SDK_OBJ:=$(builtin).o
 OBJ_LIST+=$(APP_OBJ)
 OBJ_LIST+=$(SDK_OBJ)
 
+$(OBJ_DIR)/%.o : %.c
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -MMD -c $< -o $@
+
 $(PROGRAM_NAME): $(PROGRAM_NAME_BIN)
 
-$(PROGRAM_NAME_BIN): $(PROGRAM_NAME_ELF) $(buildkey)
+$(PROGRAM_NAME_BIN): $(OBJ_DIR)/$(PROGRAM_NAME_ELF) $(buildkey)
 	arm-none-eabi-objcopy -O binary $< $@
-	(printf "0: "; xxd -ps -c32 $(buildkey)) | xxd -r - $@
+	@(printf "0: "; xxd -ps -c32 $(buildkey)) | xxd -r - $@
 
-$(PROGRAM_NAME_ELF): $(LIBS) $(OBJ_LIST)
+$(OBJ_DIR)/$(PROGRAM_NAME_ELF): $(LIBS) $(OBJ_LIST)
 	$(CC) $(OBJ_LIST) -Wl,--whole-archive $(LIBS) $(LDFLAGS) -Wl,--no-whole-archive -o $@
 
 clean:
 	rm -f $(OBJ_LIST) $(PROGRAM_NAME_BIN) $(PROGRAM_NAME_ELF)
+	rm -rf $(OBJ_DIR)
 
 .DEFAULT_GOAL:=$(PROGRAM_NAME)
 

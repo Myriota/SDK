@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -97,11 +97,9 @@ time_t BeforeSatelliteTransmit(time_t After, time_t Before);
 #define MAX_MESSAGE_SIZE 20
 /// Schedule a message of bytes of given size for transmission.
 /// The maximum message size is given by #MAX_MESSAGE_SIZE.
-/// Returns message load. Return values greater than one indicate that messages
-/// are being scheduled too quickly. NAN is returned if an error occurs, for
-/// example, if the \p MessageSize exceeds #MAX_MESSAGE_SIZE.
+/// Regardless of the value of \p MessageSize the number bytes
+/// consumed is MAX_MESSAGE_SIZE. Return value is deprecated.
 float ScheduleMessage(const uint8_t *Message, size_t MessageSize);
-
 /// Save all scheduled messages before planned module reset.
 /// Saved messages will be transmitted after reset.
 void SaveMessages(void);

@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2019-2020, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -11,7 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RunsOnGPIOWakeup runs when the GPIO wakeup pin is pressed or released.
+// This example demonstrates the handling of external IO wakeup event on rising
+// or falling edge.
+// RunsOnGPIOWakeup job is scheduled when wakeup button(PIN_GPIO0_WKUP) is
+// pressed.
 
 #include "myriota_user_api.h"
 
@@ -23,18 +26,13 @@ static time_t RunsOnGPIOWakeup() {
   printf("GPIO%u level is %s\n", (unsigned int)GPIOPin,
          ((GPIOGet(GPIOPin) == GPIO_HIGH) ? "high" : "low"));
 
-  // Change wakeup level so that we do not repeatedly wake from the same source.
-  if (GPIOGet(GPIOPin) == GPIO_HIGH)
-    GPIOSetWakeupLevel(GPIOPin, GPIO_LOW);
-  else
-    GPIOSetWakeupLevel(GPIOPin, GPIO_HIGH);
-
   return OnGPIOWakeup();
 }
 
 void AppInit() {
-  // Internally pull down the pin to make sure the pin is not floating
+  // Make sure the pin is not floating
   GPIOSetModeInput(GPIOPin, GPIO_PULL_DOWN);
-  ScheduleJob(RunsOnGPIOWakeup, OnGPIOWakeup());
+  // Wake up on rising edge, GPIO_LOW means falling edge
   GPIOSetWakeupLevel(GPIOPin, GPIO_HIGH);
+  ScheduleJob(RunsOnGPIOWakeup, OnGPIOWakeup());
 }

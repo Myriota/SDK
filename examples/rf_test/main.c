@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -20,9 +20,11 @@
 
 #define MODULE_BAND_PIN PIN_BAND
 #define ANT_SEL_PIN PIN_GPIO6
+#define TEST_MODE_SELECTION PIN_GPIO0_WKUP
 
 #define VHF_TX_DEFAULT_FREQUENCY 161450000
 #define UHF_TX_DEFAULT_FREQUENCY 400000000
+#define RX_DEFAULT_FREQUENCY 400000000
 
 void AppInit() {}
 
@@ -36,26 +38,68 @@ int BoardStart() {
     printf("Testing UHF module %s\n", ModuleIDGet());
     TxFreq = UHF_TX_DEFAULT_FREQUENCY;
   }
+  GPIOSetModeInput(TEST_MODE_SELECTION, GPIO_NO_PULL);
   while (1) {
-    if (RFTestTxStart(TxFreq, TX_TYPE_TONE, false)) {
-      printf("Failed to start\n");
+    if (GPIOGet(TEST_MODE_SELECTION) == GPIO_HIGH) {
+      printf("Testing radio transmit, press any key to stop\n");
+      if (RFTestTxStart(TxFreq, TX_TYPE_TONE, false)) {
+      } else {
+        char Ch;
+        uint32_t TickStart = TickGet();
+        while (!read(0, &Ch, 1) && TickGet() - TickStart < 10 * 1000)
+          ;
+        RFTestTxStop();
+        printf("Tx test stopped\n");
+      }
     } else {
-      printf("Test started\n");
-      Delay(10000);
-      RFTestTxStop();
-      printf("Test stopped\n");
+      printf("Testing radio receive, press any key to stop\n");
+      RFTestRxStart(RX_DEFAULT_FREQUENCY);
+      while (1) {
+        int32_t RSSI;
+        if (RFTestRxRSSI(&RSSI)) {
+          printf("Failed to read RSSI\n");
+        } else {
+          printf("RSSI = %ddBm\n", (signed)RSSI);
+          // LogAdd(0, &RSSI, sizeof(RSSI));
+        }
+        char Ch;
+        if (1 == read(0, &Ch, 1)) {
+          break;
+        }
+        Delay(1000);
+      }
+      RFTestRxStop();
+      printf("Rx test stopped\n");
     }
-    printf("Press any key to continue\n");
+    printf("Press any key to continue testing\n");
     char Ch;
     while (!read(0, &Ch, 1))
       ;
   }
+  return 0;
 }
 
-// Override antenna selection logic in BSP
-// For Myriota development board, use external antenna for RF tests
+// Use RF test specific antenna selection logic
 int BoardAntennaSelect(RadioMode Mode, RadioBand Band) {
+  // Set the antenna select pin to proper state to save power
+  if ((Mode == RADIO_MODE_INIT) || (Mode == RADIO_MODE_DEINIT)) {
+    GPIOSetLow(ANT_SEL_PIN);
+    return 0;
+  }
+
+  bool UseUHFAntenna;
+  if (Band == RADIO_BAND_VHF) {
+    UseUHFAntenna = false;
+  } else {
+    UseUHFAntenna = true;
+  }
+
   GPIOSetModeOutput(ANT_SEL_PIN);
-  GPIOSetLow(ANT_SEL_PIN);
+
+  if (UseUHFAntenna) {
+    GPIOSetHigh(ANT_SEL_PIN);
+  } else {
+    GPIOSetLow(ANT_SEL_PIN);
+  }
   return 0;
 }

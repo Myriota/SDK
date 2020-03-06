@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -22,11 +22,11 @@ import argparse
 import os
 from io import BytesIO
 
-def open_serial_port(portname):
+def open_serial_port(portname, baudrate):
     try:
         ser = serial.Serial(
             port=portname,
-            baudrate=115200,
+            baudrate=baudrate,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
@@ -39,12 +39,12 @@ def open_serial_port(portname):
         sys.exit(1)
     return ser
 
-def wait_for_serial_port(portname):
+def wait_for_serial_port(portname, baudrate):
     while True:
         try:
             ser = serial.Serial(
                 port=portname,
-                baudrate=115200,
+                baudrate=baudrate,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS,
@@ -221,38 +221,71 @@ def jump_to_app(ser):
 
 
 def get_id(ser):
-    print('ID:',end='')
-    ser.write(b'i')
-    ser.flush()
-    out = b''
-    ser.readline()
-    out += ser.readline()
-    print(out.decode('utf-8'))
+    MAX_RETRIES = 2
+    retries = 0
+    while True:
+        ser.write(b'i')
+        ser.flush()
+        out = b''
+        ser.readline()
+        out += ser.readline()
+
+        if b'Unknown' in out:
+            retries += 1
+        else:
+            print('ID:',end='')
+            print(out.decode('utf-8'))
+            break
+        if retries > MAX_RETRIES:
+            print('Failed to read ID\n')
+            break
 
 def get_regcode(ser):
-    print('Registration code:',end='')
-    ser.write(b'g')
-    ser.flush()
-    out = b''
-    ser.readline()
-    out += ser.readline()
-    print(out.decode('utf-8'))
+    MAX_RETRIES = 2
+    retries = 0
+    while True:
+        ser.write(b'g')
+        ser.flush()
+        out = b''
+        ser.readline()
+        out += ser.readline()
+
+        if b'Unknown' in out:
+            retries += 1
+        else:
+            print('Registration code:',end='')
+            print(out.decode('utf-8'))
+            break
+        if retries > MAX_RETRIES:
+            print('Failed to read regcode\n')
+            break
 
 def get_version(ser):
-    ser.write(b'V')
-    ser.flush()
-    out = b''
-    ser.readline()
-    out += ser.readline()
-    print(out.decode('utf-8'))
+    MAX_RETRIES = 2
+    retries = 0
+    while True:
+        ser.write(b'V')
+        ser.flush()
+        out = b''
+        ser.readline()
+        out += ser.readline()
+
+        if b'Unknown' in out:
+            retries += 1
+        else:
+            print(out.decode('utf-8'))
+            break
+        if retries > MAX_RETRIES:
+            print(out.decode('utf-8'))
+            break
 
 ser = None
 FIRMWARE_START_ADDRESS=0x4000
 
-
 def main():
 
     port_name = 'None'
+
     import serial.tools.list_ports
     if serial.tools.list_ports.comports():
         port_name = serial.tools.list_ports.comports()[0].device
@@ -282,17 +315,32 @@ def main():
     parser.add_argument('-v', '--version', dest='get_version_flag', action='store_true',
                         default=False,
                         help='get bootloader version (only support 0.9.0 or later)')
+    parser.add_argument("-b", "--baudrate", dest="baud_rate", metavar='BAUDRATE',
+                        default=115200, help="set the serial port BAUDRATE between 9600 and 921600")
     args = parser.parse_args()
+
     if args.portname == 'None':
         parser.error("Please specify the serial port.")
     port_name = args.portname
 
-    if args.wait_flag:
-        print('Waiting for serial port', port_name)
-        serial_port = wait_for_serial_port(port_name)
+    if args.baud_rate:
+        if int(args.baud_rate) < 9600:
+            print('Baudrate fails, minimum is 9600')
+            sys.exit(0)
+        elif int(args.baud_rate) > 921600:
+            print('Baudrate fails, maximum is 921600')
+            sys.exit(0)
+        else:
+            br = args.baud_rate
     else:
-        print('Using serial port', port_name)
-        serial_port = open_serial_port(port_name)
+        br = 115200
+
+    if args.wait_flag:
+        print('Waiting for serial port', port_name, br)
+        serial_port = wait_for_serial_port(port_name, br)
+    else:
+        print('Using serial port', port_name, br)
+        serial_port = open_serial_port(port_name, br)
     capture_bootloader(serial_port)
 
     if args.get_id_flag:
@@ -315,12 +363,6 @@ def main():
     if args.raw_commands is not None:
         update_commands += args.raw_commands
 
-    # clear network info
-    zero_stream = BytesIO(b'\0\0\0\0\0\0\0\0\0\0')
-    if not update_stream(serial_port, 'o', zero_stream):
-        print('Error clearing network info')
-        sys.exit(1)
-
     if not update_commands:
         parser.error("Please specify the files to program.")
 
@@ -330,6 +372,12 @@ def main():
         else:
             serial_port.close()
             sys.exit(1)
+
+    # Force to clear network info
+    zero_stream = BytesIO(b'\0\0\0\0\0\0\0\0\0\0')
+    if not update_stream(serial_port, 'o', zero_stream):
+        print('Update failed')
+        sys.exit(1)
 
     if args.start_flag:
         print('Starting the application')

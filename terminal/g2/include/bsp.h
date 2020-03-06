@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -122,6 +122,16 @@ void BoardDebugDeinit(void);
 int BoardDebugWrite(const uint8_t *Tx, size_t Length);
 /// Returns number of bytes read back and -1 if read fails.
 int BoardDebugRead(uint8_t *Rx, size_t Length);
+
+/// @}
+
+/// @defgroup Board_sleep_hook Sleep hooks
+/// @{
+
+/// Hook invoked before the system enters sleep.
+void BoardSleepEnter(void);
+/// Hook invoked after the system wakes up from sleep.
+void BoardSleepExit(void);
 
 /// @}
 

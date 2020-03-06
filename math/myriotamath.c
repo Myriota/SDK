@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -281,6 +281,21 @@ double myriota_random_normal() {
 double myriota_random_exponential(const double mean) {
   const double u = myriota_random_uniform();
   return -log(u) * mean;
+}
+
+int myriota_random_discrete(const double *p, int n) {
+  double sum = 0.0;
+  for (int i = 0; i < n; i++) sum += p[i];
+  if (sum == 0.0) return rand() % n;  // uniform random element
+  double cdf[n];
+  cdf[0] = p[0] / sum;
+  for (int i = 1; i < n; i++) {
+    cdf[i] = cdf[i - 1] + p[i] / sum;
+  }
+  const double t = myriota_random_uniform();
+  int i = 0;
+  while (i < n && cdf[i] < t) i++;
+  return i;
 }
 
 double myriota_continued_fraction(double x, unsigned int size, int *a) {

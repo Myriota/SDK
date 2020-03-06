@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -37,7 +37,7 @@ class SatelliteSimulator(object):
     '''
 
     def __init__(
-        self, frequency=434e6, rate=250e3, down_rate=5e3, gain=33.8,
+        self, rate=250e3, down_rate=5e3,
         chunk_duration=60,
         api_url='https://api.myriota.com/v1/spectrum/ingest/',
         id=None, url_token=lambda: None
@@ -50,10 +50,8 @@ class SatelliteSimulator(object):
         self.id = id if (id is not None and id != '') else str(uuid4())
 
         # radio parameters
-        self.frequency = frequency
         self.rate = rate
         self.down_rate = down_rate
-        self.gain = gain
 
         # chunks with int16 IQ samples
         self.chunk_duration = chunk_duration
@@ -80,7 +78,7 @@ class SatelliteSimulator(object):
             raise IOError(stderr.strip())
         return True
 
-    def start_capture(self, duration=0):
+    def start_capture(self, capture_frequency=434e6, capture_gain=33.8, duration=0):
         '''
         Initiate signal capture and processing chain. Samples are written to
         stdout attribute of the returned subprocess.Popen object. Units of the
@@ -93,9 +91,9 @@ class SatelliteSimulator(object):
             'convert_type -t int16'
         ]
         cmd = ' | '.join(cmd).format(
-            frequency=self.frequency,
+            frequency=capture_frequency,
             rate=self.rate,
-            gain=self.gain,
+            gain=capture_gain,
             down_rate=self.down_rate,
             samples=int(duration * self.rate)
         )
@@ -233,13 +231,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=SatelliteSimulator.__doc__)
     parser.add_argument('-d', '--duration', type=float, default=0,
       help='Duration of the simulation in seconds. Runs indefinitely if set to zero (default).')
+    parser.add_argument('-f', '--frequency', type=float, default=434e6,
+      help='Capture frequency.')
+    parser.add_argument('-g', '--gain', type=float, default=33.8,
+      help='Capture gain.')
+
     args = parser.parse_args()
 
     simulator = SatelliteSimulatorAuth()
     try:
         simulator.check_dongle()
         simulator.login()
-        capture = simulator.start_capture(duration=args.duration)
+        capture = simulator.start_capture(capture_frequency=args.frequency, capture_gain=args.gain, duration=args.duration)
         simulator.process_capture(capture)
     except KeyboardInterrupt as e:
         sys.exit(e)

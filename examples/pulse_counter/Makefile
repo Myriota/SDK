@@ -25,6 +25,3 @@ else
 endif
 
 include $(ROOTDIR)/terminal/app.mk
-
-clean:
-	rm -f *.o map.out *.bin *.elf

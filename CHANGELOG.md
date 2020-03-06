@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.1
+
+API changes:
+
+- Deprecates ScheduleMessage return value
+
+Improvements:
+
+- Adds example code of Myriota's Sense&Locate board
+- Adds API to get RSSI reading for RF test
+- Increases rate of diagnostics messages
+- Adds BSP API to support sleep hooks
+- Adds folder structures under application folder for generated files
+- Adds baudrate options to updater.py
+- Improves compatibility of updater.py
+- Adds more options to satellite_simulator.py
+- Improves python3 support of log-util.py
+
 ## 1.2.0
 
 Fixes:

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -224,7 +224,7 @@ enum RFTestTxType {
   TX_TYPE_PRBS       ///< transmit pseudorandom binary sequence
 };
 /// Start the RF Tx test. The default LED is on when transmitting.
-/// Antenna port should not be open when testing.
+/// The antenna port should be connected to a load when testing.
 /// \p Frequency is in Hertz.
 /// \p TxType can be tone or pseudorandom binary sequence defined by
 /// #RFTestTxType. When testing in burst mode, the radio is on for 250ms and off
@@ -233,6 +233,17 @@ enum RFTestTxType {
 int RFTestTxStart(uint32_t Frequency, uint8_t TxType, bool IsBurst);
 /// Stop the RF Tx test.
 void RFTestTxStop(void);
+
+/// Turn on the satellite radio receiver.
+/// \p Frequency is in Hertz.
+/// Returns 0 if succeeded and -1 if failed.
+int RFTestRxStart(uint32_t Frequency);
+/// Get current RSSI from radio receiver.
+/// \p RSSI is in dBm.
+/// Returns 0 if succeeded and -1 if failed.
+int RFTestRxRSSI(int32_t *RSSI);
+/// Stop the RF Rx test.
+void RFTestRxStop(void);
 
 /// @}
 

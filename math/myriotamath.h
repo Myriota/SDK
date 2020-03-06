@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2019, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -223,6 +223,10 @@ double myriota_random_normal();
 
 // Generate an exponentially distributed random variable
 double myriota_random_exponential(const double mean);
+
+// Sample from discrete probability mass function p of length n.
+// p will be normalised to sum to one prior to sampling
+int myriota_random_discrete(const double *p, int n);
 
 // Computes continued fraction expansion of decimal number of size N.
 // Returns upper bound on approximation error.
