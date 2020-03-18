@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2
+
+Fixes:
+
+- Fixes an issue where `BeforeSatelliteTransmit` may not return the correct time after network information update
+
 ## 1.2.1
 
 API changes:
