@@ -22,50 +22,88 @@ import serial
 import argparse
 import binascii
 
-errors = {0:  'Internal test',
-          1:  'Factory reset',
-          2:  'Watchdog reset',
-          3:  'System states',
-          4:  'MCU faults',
-          5:  'Invalid key',
-          6:  'Application starts',
-          7:  'Assertion failure',
-          8:  'Memory error',
-          9:  'Stack low in space',
-          10: 'Stack overflow',
-          11: 'Module ID',
-          12: 'Reset reason'}
+errors = {
+    0: "Internal test",
+    1: "Factory reset",
+    2: "Watchdog reset",
+    3: "System states",
+    4: "MCU faults",
+    5: "Invalid key",
+    6: "Application starts",
+    7: "Assertion failure",
+    8: "Memory error",
+    9: "Stack low in space",
+    10: "Stack overflow",
+    11: "Module ID",
+    12: "Reset reason",
+    13: "Periodic states dump",  # New system states dump
+}
 
 unpack_strings = {
-    'Internal test':'<II',
-    'Watchdog reset': '<III',
-    'System states': '<IIIIIIIIIIII',
-    'MCU faults': '<IIII',
-    'Application starts': '<QI',
-    'Assertion failure': '<II',
-    'Stack low in space': '<II',
-    'Stack overflow': '<I',
-    'Module ID': '<I',
-    'Reset reason': '<I',
+    "Internal test": "<II",
+    "Watchdog reset": "<III",
+    "System states": "<IIIIIIIIIIII",
+    "MCU faults": "<IIII",
+    "Application starts": "<QI",
+    "Assertion failure": "<II",
+    "Stack low in space": "<II",
+    "Stack overflow": "<I",
+    "Module ID": "<I",
+    "Reset reason": "<I",
+    "Periodic states dump": "<IIIIIIIIIII",
 }
 
 contents = {
-    'Internal test': ['Test1', 'Test2'],
-    'Watchdog reset': ['Job ID', 'PC', 'LR'],
-    'System states':
-        ['Reset reason', 'Wakeup times',
-         'Last GNSS fix time', 'Last job ID',
-         'Watchdog timeouted job ID', 'Watchdog timeout address',
-         'Job ID of maximum run count', 'Last log ID',
-         'GNSS fix failures', 'GNSS fix successes',
-         'GNSS total fix time', 'Job maximum run count'],
-    'MCU faults':  ['CFSR', 'LR', 'PC', 'PSR'],
-    'Application starts': ['Build hash', 'SDK version'],
-    'Assertion failure': ['Return address', 'Line number'],
-    'Stack low in space': ['JobId', 'StackUsage'],
-    'Stack overflow': ['JobId'],
-    'Module ID': ['Module ID'],
-    'Reset reason': ['Reset reason']
+    "Internal test": ["Test1", "Test2"],
+    "Watchdog reset": ["Job ID", "PC", "LR"],
+    "System states": [
+        "Reset reason",
+        "Wakeup times",
+        "Last GNSS fix time",
+        "Last job ID",
+        "Watchdog timeouted job ID",
+        "Watchdog timeout address",
+        "Job ID of maximum run count",
+        "Last log ID",
+        "GNSS fix failures",
+        "GNSS fix successes",
+        "GNSS total fix time",
+        "Job maximum run count",
+    ],
+    "MCU faults": ["CFSR", "LR", "PC", "PSR"],
+    "Application starts": ["Build hash", "SDK version"],
+    "Assertion failure": ["Return address", "Line number"],
+    "Stack low in space": ["JobId", "StackUsage"],
+    "Stack overflow": ["JobId"],
+    "Module ID": ["Module ID"],
+    "Reset reason": ["Reset reason"],
+    "Periodic states dump": [
+        "Reset reason",
+        "Wakeup count",
+        "Last GNSS fix time",
+        "GNSS total fix time",
+        "GNSS fix failures",
+        "GNSS fix successes",
+        "Last job ID",
+        "Job ID of maximum run count",
+        "Job maximum run count",
+        "User jobs run count",
+        "Last log ID",
+    ],
+}
+
+reset_reasons = {
+    0: "Power cycle",
+    1: "Hardware nRST",
+    2: "Software watchdog",
+    3: "Software reset",
+    4: "System lockup",
+    5: "Brownout (battery low)",
+    6: "Others",
+    7: "Hardware watchdog",
+    8: "MCU fault",
+    9: "User requested reset via SDK API",
+    10: "System sleep failure",
 }
 
 # if using python2, rename raw_input to input
@@ -74,10 +112,11 @@ try:
 except NameError:
     pass
 
+
 def dump_bytes(bytes):
     for b in bytes:
-        print ('%02x' % b, end=' ')
-    print('')
+        print("%02x" % b, end=" ")
+    print("")
 
 
 # Read number of bytes rounded to 4, and dump if readback is too short
@@ -85,7 +124,7 @@ def read_and_check_completion(file, length):
     # Round to 4 bytes boundary
     bytes = bytearray(file.read(int((length + 3) // 4 * 4)))
     if len(bytes) < length:
-        print('Incomplete log payload')
+        print("Incomplete log payload")
         dump_bytes(bytes)
         return None
     else:
@@ -101,7 +140,7 @@ def decode_log(logfile):
         while True:
             bytes = binary_file.read(8)
             if len(bytes) < 8:
-                print('Incomplete log entry')
+                print("Incomplete log entry")
                 binary_file.close()
                 return is_empty
             timestamp = struct.unpack("<IHH", bytes)
@@ -111,11 +150,11 @@ def decode_log(logfile):
                 return is_empty
             is_empty = False
             # UTC time
-            time_string = time.strftime('%Y-%m-%d %H:%M:%S UTC',
-                                        time.gmtime(float(timestamp)))
+            time_string = time.strftime(
+                "%Y-%m-%d %H:%M:%S UTC", time.gmtime(float(timestamp))
+            )
             if code >= 0x80:
-                print ('====%s User error code %d===='
-                       % (time_string, (code-0x80)))
+                print("====%s User error code %d====" % (time_string, (code - 0x80)))
                 if length != 0:
                     bytes = read_and_check_completion(binary_file, length)
                     if bytes is None:
@@ -131,8 +170,7 @@ def decode_log(logfile):
                     key_unknown = True
                 # If unknown. just do hex dump
                 if key_unknown:
-                    print ('====%s Unknown error code %d===='
-                           % (time_string, code))
+                    print("====%s Unknown error code %d====" % (time_string, code))
                     if length != 0:
                         bytes = read_and_check_completion(binary_file, length)
                         if bytes is None:
@@ -140,26 +178,27 @@ def decode_log(logfile):
                         else:
                             dump_bytes(bytes)
                 else:
-                    print ('====%s %s====' % (time_string, key))
+                    print("====%s %s====" % (time_string, key))
                     if length != 0:
                         bytes = read_and_check_completion(binary_file, length)
                         if bytes is None:
                             return is_empty
                         else:
                             try:
-                                values = struct.unpack(unpack_strings[key],
-                                                       bytes)
+                                values = struct.unpack(unpack_strings[key], bytes)
                                 for k, v in zip(contents[key], values):
-                                    print ('%s : 0x%08x(%d)' % (k, v, v))
+                                    print("%s : 0x%08x(%d)" % (k, v, v))
+                                if key == "Reset reason":
+                                    print("%s" % reset_reasons[values[0]])
                             except struct.error:
                                 # Version mismatch
-                                print('Unable to decode')
+                                print("Unable to decode")
                                 dump_bytes(bytes)
 
 
 def capture_bootloader(portname, baudrate, wait_flag):
     if wait_flag:
-        print('Waiting for serial port', portname)
+        print("Waiting for serial port", portname)
         while True:
             try:
                 ser = serial.Serial(
@@ -170,7 +209,7 @@ def capture_bootloader(portname, baudrate, wait_flag):
                     bytesize=serial.EIGHTBITS,
                     xonxoff=0,
                     rtscts=0,
-                    timeout=0.5
+                    timeout=0.5,
                 )
                 break
             except (OSError, serial.SerialException):
@@ -186,35 +225,35 @@ def capture_bootloader(portname, baudrate, wait_flag):
                 bytesize=serial.EIGHTBITS,
                 xonxoff=0,
                 rtscts=0,
-                timeout=0.5
+                timeout=0.5,
             )
         except (OSError, serial.SerialException):
-            print('Failed to open', portname)
+            print("Failed to open", portname)
             sys.exit(1)
 
     ser.reset_input_buffer()
-    ser.write(b'U')
+    ser.write(b"U")
     ser.flush()
     out = ser.readline()
     if out is not None:
         out += ser.readline()
         out += ser.readline()
-    if b'Unknown' in out or b'Bootloader' in out:
+    if b"Unknown" in out or b"Bootloader" in out:
         return ser
-    print('Please reset the device', end='')
+    print("Please reset the device", end="")
     sys.stdout.flush()
 
     # Try to capture the bootloader
     while True:
-        ser.write(b'U')
+        ser.write(b"U")
         ser.flush()
         out = ser.readline()
-        if b'Bootloader' in out or b'Unknown' in out:
-            print('')
+        if b"Bootloader" in out or b"Unknown" in out:
+            print("")
             break
         else:
             time.sleep(0.5)
-            print('.', end='')
+            print(".", end="")
             sys.stdout.flush()
 
     ser.reset_input_buffer()
@@ -222,10 +261,10 @@ def capture_bootloader(portname, baudrate, wait_flag):
 
 
 def read_log(ser):
-    print('Start reading the log')
+    print("Start reading the log")
     # Start dumping
-    ser.write(b'x')
-    dump = b''
+    ser.write(b"x")
+    dump = b""
     while True:
         out = ser.readline()
         if len(out) > 16:
@@ -238,43 +277,74 @@ def read_log(ser):
 def purge_log(ser):
     # Start purging
     while True:
-        ser.write(b'!')
-        out = ''
+        ser.write(b"!")
+        out = ""
         out = ser.readline()
-        if b'purged' in out:
+        if b"purged" in out:
             break
-    print('The log has been purged')
+    print("The log has been purged")
 
 
 def main():
-    infile = ''
-    outfile = ''
-    portname = 'None'
+    infile = ""
+    outfile = ""
+    portname = "None"
 
     import serial.tools.list_ports
+
     if serial.tools.list_ports.comports():
         portname = serial.tools.list_ports.comports()[0].device
 
-    parser = argparse.ArgumentParser(description='Myriota device log decoder',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-i", "--ifile", dest="infile",
-                        help="decode local log FILE", metavar='FILE')
-    parser.add_argument("-o", "--ofile", dest="outfile", default='log.bin',
-                        metavar="FILE",
-                        help="write log to FILE")
-    parser.add_argument("-p", "--port", dest="portname", metavar='PORT', default=portname,
-                        help="serial PORT the Myriota device is connected to, e.g. /dev/ttyUSB0")
-    parser.add_argument('-w', '--wait', dest='wait_flag', action='store_true', default=False,
-                        help='wait for PORT to be available')
-    parser.add_argument("-x", "--purge", dest="purge_flag",
-                        action="store_true",
-                        default=False, help="purge the log")
-    parser.add_argument("-b", "--baudrate", dest="baud_rate", metavar='BAUDRATE',
-                        default=115200, help="set the serial port BAUDRATE")
+    parser = argparse.ArgumentParser(
+        description="Myriota device log decoder",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-i", "--ifile", dest="infile", help="decode local log FILE", metavar="FILE"
+    )
+    parser.add_argument(
+        "-o",
+        "--ofile",
+        dest="outfile",
+        default="log.bin",
+        metavar="FILE",
+        help="write log to FILE",
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        dest="portname",
+        metavar="PORT",
+        default=portname,
+        help="serial PORT the Myriota device is connected to, e.g. /dev/ttyUSB0",
+    )
+    parser.add_argument(
+        "-w",
+        "--wait",
+        dest="wait_flag",
+        action="store_true",
+        default=False,
+        help="wait for PORT to be available",
+    )
+    parser.add_argument(
+        "-x",
+        "--purge",
+        dest="purge_flag",
+        action="store_true",
+        default=False,
+        help="purge the log",
+    )
+    parser.add_argument(
+        "-b",
+        "--baudrate",
+        dest="baud_rate",
+        metavar="BAUDRATE",
+        default=115200,
+        help="set the serial port BAUDRATE",
+    )
     args = parser.parse_args()
 
-    if args.portname == 'None' and args.infile is None \
-            and args.purge_flag is False:
+    if args.portname == "None" and args.infile is None and args.purge_flag is False:
         parser.error("Invalid options.")
     if args.infile:
         infile = args.infile
@@ -282,34 +352,34 @@ def main():
         if args.portname:
             portname = args.portname
         if args.purge_flag:
-            if args.portname == 'None':
+            if args.portname == "None":
                 parser.error("Please specify the serial port.")
         if args.outfile:
-            if args.portname == 'None':
+            if args.portname == "None":
                 parser.error("Please specify the serial port.")
             outfile = args.outfile
 
     ser = None
     if args.purge_flag:
-        answer = ''
-        while answer not in ['y', 'n']:
+        answer = ""
+        while answer not in ["y", "n"]:
             answer = input("Do you want to purge the log [y/n]? ").lower()
-            if answer == 'y':
+            if answer == "y":
                 if ser is None:
                     ser = capture_bootloader(portname, args.baud_rate, args.wait_flag)
                     purge_log(ser)
         sys.exit()
 
     if not infile:
-        if portname != 'None':
+        if portname != "None":
             ser = capture_bootloader(portname, args.baud_rate, args.wait_flag)
             dump = read_log(ser)
-            print('Writing log to', outfile)
+            print("Writing log to", outfile)
             with open(outfile, "wb") as binary_file:
                 binary_file.write(binascii.unhexlify(dump))
                 binary_file.close()
             infile = outfile
-    print('Decoding', infile)
+    print("Decoding", infile)
     if decode_log(infile):
         print("No log found")
 

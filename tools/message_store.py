@@ -22,6 +22,7 @@ import time
 
 _domain = "https://api.myriota.com/v1"
 
+
 def do_query(idtoken, moduleid, range_from=None, limit=None):
     params = []
     if range_from:
@@ -36,6 +37,7 @@ def do_query(idtoken, moduleid, range_from=None, limit=None):
 
     return response.json()["Items"]
 
+
 def main(argv=None, auth=myriota_auth.auth):
     """CLI entrypoint."""
     import getpass
@@ -43,16 +45,32 @@ def main(argv=None, auth=myriota_auth.auth):
     import os
 
     parser = argparse.ArgumentParser(
-        description='Command line interface for the Myriota Message Store. Use %s <command> -h for help on a specific command.' % os.path.basename(sys.argv[0]),
+        description="Command line interface for the Myriota Message Store. Use %s <command> -h for help on a specific command."
+        % os.path.basename(sys.argv[0])
     )
-    subparsers = parser.add_subparsers(dest='command', title='Valid commands')
+    subparsers = parser.add_subparsers(dest="command", title="Valid commands")
     sub_parser = subparsers.add_parser(
-        'query', help="Query Message Store for received messages",
-        description="Query Message Store for received messages"
+        "query",
+        help="Query Message Store for received messages",
+        description="Query Message Store for received messages",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     sub_parser.add_argument("moduleid", help="Module Id")
-    sub_parser.add_argument("-f", "--from", dest="range_from", type=int, default=0, help="Unix epoch second to start query from")
-    sub_parser.add_argument("-l", "--limit", type=int, default=100, help="Maximum number of entries to return")
+    sub_parser.add_argument(
+        "-f",
+        "--from",
+        dest="range_from",
+        type=int,
+        default=0,
+        help="Unix epoch second to start query from",
+    )
+    sub_parser.add_argument(
+        "-l",
+        "--limit",
+        type=int,
+        default=100,
+        help="Maximum number of entries to return",
+    )
 
     args = parser.parse_args(argv)
 
@@ -62,15 +80,15 @@ def main(argv=None, auth=myriota_auth.auth):
 
     if args.command == "query":
         range_from = args.range_from * 1000
-        idtoken = auth()['IdToken']
+        idtoken = auth()["IdToken"]
         try:
             items = do_query(idtoken, args.moduleid, range_from, args.limit)
-        except requests.exceptions.HTTPError as e:
-            print(e)
-            sys.exit(1)
+        except requests.exceptions.RequestException as e:
+            raise SystemExit(e)
         return json.dumps(items, indent=2)
     else:
         return "Invalid command"
+
 
 if __name__ == "__main__":
     print(main())

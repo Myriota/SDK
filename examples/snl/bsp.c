@@ -174,4 +174,3 @@ int BoardDebugRead(uint8_t *Rx, size_t Length) {
 __attribute__((weak)) void BoardSleepEnter(void) {}
 
 __attribute__((weak)) void BoardSleepExit(void) {}
-

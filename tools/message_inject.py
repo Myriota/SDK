@@ -23,25 +23,34 @@ import time
 
 _domain = "https://api.myriota.com/v1"
 
+
 def do_inject(idtoken, moduleid):
     print("Injecting messages from %s..." % moduleid)
-    line = ''
+    line = ""
     while True:
         ch = sys.stdin.read(1)
-        if ch == '':
+        if ch == "":
             print("Exiting...")
             exit(0)
         line += ch
-        if line.endswith('\n'):
+        if line.endswith("\n"):
             if line.strip():
-                message=line.strip().rstrip('\n')
+                message = line.strip().rstrip("\n")
                 print(message)
-                data = {'TerminalId': moduleid, 'Message':message}
-                headers = {'Content-type': 'application/json', 'Authorization': idtoken()['IdToken']}
-                url = _domain+'/messages'
-                response = requests.post(url, data=json.dumps(data), headers=headers)
-                response.raise_for_status()
-            line = ''
+                data = {"TerminalId": moduleid, "Message": message}
+                headers = {
+                    "Content-type": "application/json",
+                    "Authorization": idtoken()["IdToken"],
+                }
+                url = _domain + "/messages"
+                try:
+                    response = requests.post(
+                        url, data=json.dumps(data), headers=headers
+                    )
+                    response.raise_for_status()
+                except requests.exceptions.RequestException as e:
+                    raise SystemExit(e)
+            line = ""
 
 
 def main(argv=None):
@@ -51,7 +60,9 @@ def main(argv=None):
     import os
     import sys
 
-    parser = argparse.ArgumentParser(description='Command line interface for manually injecting message. Messages are input using stdin. Example: echo "1234abcd" | ./message_inject.py <moduleid>')
+    parser = argparse.ArgumentParser(
+        description='Command line interface for manually injecting message. Messages are input using stdin. Example: echo "1234abcd" | ./message_inject.py <moduleid>'
+    )
     parser.add_argument("moduleid", help="Module Id")
     args = parser.parse_args(argv)
 
@@ -66,6 +77,7 @@ def main(argv=None):
     except requests.exceptions.HTTPError as e:
         print(e)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

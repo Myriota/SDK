@@ -87,7 +87,11 @@ time_t OnLeuartReceive(void);
 /// reading and satellite transmission. If no opportunity is found between \p
 /// After and \p Before, then \p Before is returned.
 time_t BeforeSatelliteTransmit(time_t After, time_t Before);
-
+/// Return a time to schedule next message to achieve the maximum message
+/// throughput. The function is best suited to near-periodic message scheduling
+/// where the period will adapt to the current satellite network, ensuring
+/// the number of messages is limited to \p MaxMessagesPerDay.
+time_t MaxThroughput(unsigned MaxMessagesPerDay);
 /// @}
 
 /// @defgroup User_message User message
@@ -98,8 +102,14 @@ time_t BeforeSatelliteTransmit(time_t After, time_t Before);
 /// Schedule a message of bytes of given size for transmission.
 /// The maximum message size is given by #MAX_MESSAGE_SIZE.
 /// Regardless of the value of \p MessageSize the number bytes
-/// consumed is MAX_MESSAGE_SIZE. Return value is deprecated.
+/// consumed is MAX_MESSAGE_SIZE. Calling ScheduleMessage when the
+/// number of bytes returned by MessageBytesFree is less than MAX_MESSAGE_SIZE
+/// replaces an existing message in the queue. This may result in dropped
+/// messages. See also MessageBytesFree. Return value is deprecated.
 float ScheduleMessage(const uint8_t *Message, size_t MessageSize);
+/// Returns number of bytes remaining in internal queue, that is,
+/// the number of bytes that can be scheduled with ScheduleMessage.
+size_t MessageBytesFree(void);
 /// Save all scheduled messages before planned module reset.
 /// Saved messages will be transmitted after reset.
 void SaveMessages(void);

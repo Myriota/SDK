@@ -46,7 +46,13 @@ typedef MYRIOTA_DECIMAL myriota_decimal;
 typedef MYRIOTA_DECIMAL _Complex myriota_complex;
 
 // Approximation of the irrational number
+#ifdef __ROOTCLING__
+// pi defintion doesn't play well with cppyy.
+// needs to be a variable so it can be masked
+static const double pi = 3.14159265358979323846;
+#else
 #define pi 3.14159265358979323846
+#endif
 
 // square root of 2.
 #define sqrt2 1.41421356237

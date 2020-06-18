@@ -25,16 +25,27 @@ import struct
 import json
 import fileinput
 
+
 def unpack(packet):
     num, lat, lon, timestamp = struct.unpack("<HiiI", bytearray.fromhex(packet[0:28]))
-    return [{'Sequence number': num, 'Latitude': lat/1e7, 'Longitude': lon/1e7, 'Timestamp': timestamp}]
+    return [
+        {
+            "Sequence number": num,
+            "Latitude": lat / 1e7,
+            "Longitude": lon / 1e7,
+            "Timestamp": timestamp,
+        }
+    ]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Unpack hexadecimal data from tracker example.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-x', '--hex', type=str, default="-",
-                        help='Packet data in hexadecimal format')
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-x", "--hex", type=str, default="-", help="Packet data in hexadecimal format"
+    )
     args = parser.parse_args()
 
     d = []

@@ -90,6 +90,12 @@ myriota_decimal myriota_complex_norm(myriota_complex x);
 // Sinc function
 double myriota_sinc(double t);
 
+// Hyperbolic sine function
+double myriota_sinh(double x);
+
+// Inverse cosine using inverse sine
+static inline double myriota_acos(double x) { return pi / 2 - asin(x); }
+
 // Factorial of an integer n*(n-1)*(n-2)*...*1
 unsigned long myriota_factorial(unsigned int n);
 
@@ -224,9 +230,9 @@ double myriota_random_normal();
 // Generate an exponentially distributed random variable
 double myriota_random_exponential(const double mean);
 
-// Sample from discrete probability mass function p of length n.
-// p will be normalised to sum to one prior to sampling
-int myriota_random_discrete(const double *p, int n);
+// Sample from discrete probability mass function p of length n given uniformly
+// sampled u from [0,1]. p will be normalised to sum to one prior to sampling
+int myriota_random_discrete(const double *p, int n, double u);
 
 // Computes continued fraction expansion of decimal number of size N.
 // Returns upper bound on approximation error.
@@ -270,29 +276,19 @@ myriota_rational myriota_rational_approximation(double x, double tol, int qmax,
 // double cubic_func(double x, void* d) { return x * x * (x - 1); }
 // double x = myriota_bisection(cubic_func, NULL, 0.5, 1.7, 1e-7, 100);
 //  x will be 1.
-double myriota_bisection(double (*f)(double, void *), void *fdata, double ax,
-                         double bx, double tol, unsigned int ITRMAX);
+double myriota_bisection(double (*f)(double, void *), void *fdata,
+                         const double ax, const double bx, const double tol);
 
 // Finds x such that f(x) = y.
 // Uses the bisection method internally.
 // The solution must lie within the interval (ax, bx).
-double myriota_solve(double (*f)(double, void *), void *fdata, double y,
-                     double ax, double bx, double tol, unsigned int ITRMAX);
+double myriota_solve(double (*f)(double, void *), void *fdata, const double y,
+                     const double ax, const double bx, const double tol);
 
-// Performs a 1-dimensional minimization of the function f. Implements Brent's
-// method combining a golden-section search and parabolic interpolation.
-//
-// The search interval is [ax,cx] and bx must satisfy both ax < bx < cx and
-// f(ax) > f(bx) < f(cx). The myriota_brent function terminates when either the
-// number of iterations performed reaches max_iterations or the value of *x is
-// within tol of the minimiser of f.
-//
-// Returns the number of iterations performed. The minimum value of f is return
-// in *fx and the minimiser in *x.
-unsigned int myriota_brent(double (*f)(double, void *), void *fdata,
-                           const double ax, const double bx, const double cx,
-                           double *fx, double *x, const double tol,
-                           const unsigned int max_iterations);
+// Performs a 1-dimensional minimization of the function f by ternery search.
+// Returns number x on interval [a,b] that locally minimises f(x,fdata).
+double myriota_minimise(double (*f)(double, void *), void *fdata,
+                        const double a, const double b, const double tol);
 
 // A function for unwrapping a phase wrapped sequence
 // Phase is assumed to reside in the interval [-pi, pi].

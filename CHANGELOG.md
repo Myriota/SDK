@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0
+
+API changes:
+
+- Adds API for scaling the message throughput based on current network
+- Adds API to return the number of bytes free in the message queue
+
+Improvements:
+
+- Adds support to update network information via updater.py
+- Improves Sense&Locate example
+- Reformats Python tools
+
 ## 1.2.2
 
 Fixes:

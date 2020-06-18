@@ -138,6 +138,8 @@ double myriota_sinc(double t) {
   return sin(pi * t) / (pi * t);
 }
 
+double myriota_sinh(double x) { return (1 - exp(-2 * x)) / (2 * exp(-x)); }
+
 unsigned long myriota_factorial(unsigned int n) {
   unsigned long ret = 1;
   for (unsigned int j = 1; j <= n; j++) ret *= j;
@@ -283,19 +285,16 @@ double myriota_random_exponential(const double mean) {
   return -log(u) * mean;
 }
 
-int myriota_random_discrete(const double *p, int n) {
+int myriota_random_discrete(const double *p, int n, double u) {
   double sum = 0.0;
   for (int i = 0; i < n; i++) sum += p[i];
-  if (sum == 0.0) return rand() % n;  // uniform random element
-  double cdf[n];
-  cdf[0] = p[0] / sum;
-  for (int i = 1; i < n; i++) {
-    cdf[i] = cdf[i - 1] + p[i] / sum;
+  if (sum == 0.0) return (u * n);  // uniform random element
+  double cdf = 0;
+  for (int i = 0; i < n; i++) {
+    cdf += p[i] / sum;
+    if (cdf >= u) return i;
   }
-  const double t = myriota_random_uniform();
-  int i = 0;
-  while (i < n && cdf[i] < t) i++;
-  return i;
+  return n - 1;
 }
 
 double myriota_continued_fraction(double x, unsigned int size, int *a) {
@@ -361,29 +360,22 @@ myriota_rational myriota_rational_approximation(double x, double tol, int qmax,
   return r[k - 1];
 }
 
-double myriota_bisection(double (*f)(double, void *), void *fdata, double ax,
-                         double bx, double tol, unsigned int max_iterations) {
-  double a = ax;
-  double b = bx;
-  double xzero = 0;
-  for (unsigned int i = 1; i <= max_iterations; i++) {
-    double c = (a + b) / 2;
-    double fc = f(c, fdata);
-    if (fc == 0 || fabs(a - b) / 2 < tol) {
-      xzero = c;
-      return xzero;
-    }
-    if (myriota_signum(fc) == myriota_signum(f(a, fdata)))
-      a = c;
-    else
-      b = c;
-  }
-  return xzero;
+// optimised bisection that prevents double computation of f
+static double _bisection(double (*f)(double, void *), void *fdata,
+                         const double a, const double b, const int sa,
+                         const int sb, const double tol) {
+  const double m = (a + b) / 2;
+  if (fabs(b - a) < tol) return m;
+  const int sm = myriota_signum(f(m, fdata));
+  if (sm == sa) return _bisection(f, fdata, m, b, sm, sb, tol);
+  return _bisection(f, fdata, a, m, sa, sm, tol);
 }
 
-double myriota_bisection_default(double (*f)(double, void *), void *fdata,
-                                 double a, double b) {
-  return myriota_bisection(f, fdata, a, b, 1e-5, 100);
+double myriota_bisection(double (*f)(double, void *), void *fdata,
+                         const double a, const double b, const double tol) {
+  const int sa = myriota_signum(f(a, fdata));
+  const int sb = myriota_signum(f(b, fdata));
+  return _bisection(f, fdata, a, b, sa, sb, tol);
 }
 
 // contains function to solve for and desired value
@@ -400,103 +392,27 @@ static double solve_offset(double x, void *data) {
   return s->f(x, s->data) - s->y;
 }
 
-double myriota_solve(double (*f)(double, void *), void *fdata, double y,
-                     double ax, double bx, double tol,
-                     unsigned int max_iterations) {
+double myriota_solve(double (*f)(double, void *), void *fdata, const double y,
+                     const double ax, const double bx, const double tol) {
   struct solve_struct s = {f, fdata, y};
-  return myriota_bisection(solve_offset, &s, ax, bx, tol, max_iterations);
+  return myriota_bisection(solve_offset, &s, ax, bx, tol);
+}
+
+double myriota_minimise(double (*f)(double, void *), void *fdata,
+                        const double a, const double b, const double tol) {
+  if (fabs(b - a) < tol) return (a + b) / 2;
+  const double at = (2 * a + b) / 3;
+  const double bt = (a + 2 * b) / 3;
+  if (f(at, fdata) > f(bt, fdata))
+    return myriota_minimise(f, fdata, at, b, tol);
+  return myriota_minimise(f, fdata, a, bt, tol);
 }
 
 double myriota_unwrap(const double value, const double previous_value) {
-  double d = myriota_fracpart_scaled(value - previous_value, 2 * pi);
+  const double d = myriota_fracpart_scaled(value - previous_value, 2 * pi);
   if (d > pi) return d + previous_value - 2 * pi;
   if (d < -pi) return d + previous_value + 2 * pi;
   return d + previous_value;
-}
-
-// function used internally by myriota_brent
-double myriota_brent_sign(double a, double b) {
-  return fabs(a) * myriota_signum(b);
-}
-
-unsigned int myriota_brent(double (*f)(double, void *), void *fdata,
-                           const double ax, const double bx, const double cx,
-                           double *fx, double *x, const double tol,
-                           const unsigned int max_iterations) {
-  // close to machine precision (works for both float and double definitions
-  // of double)
-  const double eps = sizeof(double) == 8 ? 1e-10 : 1e-6;
-  const double C = (3.0 - sqrt(5.0)) / 2.0;
-
-  double e = 0.0;
-  double d = 0.0;
-  double a = (ax < cx ? ax : cx);
-  double b = (ax > cx ? ax : cx);
-  *x = bx;
-  double w = bx;
-  double v = bx;
-  double fw = f(*x, fdata);
-  double fv = fw;
-  *fx = fw;
-  for (unsigned int iter = 0; iter < max_iterations; iter++) {
-    const double xm = 0.5 * (a + b);
-    const double tol1 = tol + eps;
-    const double tol2 = 2.0 * tol1;
-    if (fabs(*x - xm) <= tol2 - 0.5 * (b - a)) return iter;  //(fx, x)
-
-    if (fabs(e) > tol1) {
-      const double r = (*x - w) * (*fx - fv);
-      double q = (*x - v) * (*fx - fv);
-      double p = (*x - v) * q - (*x - v) * r;
-      q = 2.0 * (q - r);
-      if (q > 0.0) p = -p;
-      q = fabs(q);
-      const double etemp = e;
-      e = d;
-      if (fabs(p) >= fabs(0.5 * q * etemp) || p <= q * (a - *x) ||
-          p >= q * (b - *x)) {  // golden step
-        e = (*x >= xm) ? a - *x : b - *x;
-        d = C * e;
-      } else {  // parabolic step
-        d = p / q;
-        const double u = *x + d;
-        if (u - a < tol2 || b - u < tol2) d = myriota_brent_sign(tol1, xm - *x);
-      }
-    } else {
-      e = (*x >= xm) ? a - *x : b - *x;
-      d = C * e;
-    }
-    const double u =
-        (fabs(d) >= tol1 ? *x + d : *x + myriota_brent_sign(tol1, d));
-    const double fu = f(u, fdata);
-    if (fu <= *fx) {
-      if (u >= *x)
-        a = *x;
-      else
-        b = *x;
-      v = w;
-      w = *x;
-      *x = u;
-      fv = fw;
-      fw = *fx;
-      *fx = fu;
-    } else {
-      if (u < *x)
-        a = u;
-      else
-        b = u;
-      if (fu <= fw || w == *x) {
-        v = w;
-        w = u;
-        fv = fw;
-        fw = fu;
-      } else if (fu <= fv || v == *x || v == w) {
-        v = u;
-        fv = fu;
-      }
-    }
-  }
-  return max_iterations;  // reached maximum number of iterations.
 }
 
 // hidden reverse function used by myriota_rotate
@@ -731,11 +647,11 @@ void myriota_detect_sinusoid_inplace(myriota_complex *x, const unsigned int N,
 
   // refine the periodogram using Brents method
   periodogram_brent_data data = {x, N, M};
-  double xhat;
   myriota_inverse_fft(M, x, x);
-  myriota_brent(periodogram_brent_time_domain, &data, (nhat - 0.5) / M,
-                1.0 * nhat / M, (nhat + 0.5) / M, &Imax, &xhat, 1e-6, 100);
-  Imax *= -1;  // Brent's method minimises, so need to invert
+  const double xhat =
+      myriota_minimise(periodogram_brent_time_domain, &data, (nhat - 0.5) / M,
+                       (nhat + 0.5) / M, 1e-6);
+  Imax = periodogram_standard(xhat, x, N);  // maximum value of periodogram
 
   // compute confidence (complex version of the Turkman-Walker test)
   // this is a probability that this frequency estimate corresponds with an
@@ -985,10 +901,8 @@ int myriota_interval_union(const myriota_interval *a, const int alen,
 
 bool myriota_interval_contains(const myriota_interval *A, const int Alen,
                                double p) {
-  for (int i = 0; i < Alen; i++) {
-    if (p < A[i].min) return false;
-    if (p <= A[i].max) return true;
-  }
+  for (int i = 0; i < Alen; i++)
+    if (p >= A[i].min && p <= A[i].max) return true;
   return false;
 }
 

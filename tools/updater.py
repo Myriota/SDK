@@ -22,6 +22,7 @@ import argparse
 import os
 from io import BytesIO
 
+
 def open_serial_port(portname, baudrate):
     try:
         ser = serial.Serial(
@@ -32,12 +33,13 @@ def open_serial_port(portname, baudrate):
             bytesize=serial.EIGHTBITS,
             xonxoff=0,
             rtscts=0,
-            timeout=0.5
+            timeout=0.5,
         )
     except (OSError, serial.SerialException):
-        print('Failed to open', portname)
+        print("Failed to open", portname)
         sys.exit(1)
     return ser
+
 
 def wait_for_serial_port(portname, baudrate):
     while True:
@@ -50,25 +52,26 @@ def wait_for_serial_port(portname, baudrate):
                 bytesize=serial.EIGHTBITS,
                 xonxoff=0,
                 rtscts=0,
-                timeout=0.5
+                timeout=0.5,
             )
             return ser
         except (OSError, serial.SerialException):
             time.sleep(0.5)
             pass
 
+
 def capture_bootloader(ser):
     # return straightaway if already in bootloader
     ser.reset_input_buffer()
-    ser.write(b'U')
+    ser.write(b"U")
     ser.flush()
     out = ser.readline()
     if out is not None:
         out += ser.readline()
         out += ser.readline()
-    if b'Unknown' in out or b'Bootloader' in out:
+    if b"Unknown" in out or b"Bootloader" in out:
         return
-    print('Please reset the device', end='')
+    print("Please reset the device", end="")
     sys.stdout.flush()
     ser.reset_input_buffer()
 
@@ -76,24 +79,24 @@ def capture_bootloader(ser):
     MAX_RETRIES = 10
     retries = 0
     while True:
-        ser.write(b'U')
+        ser.write(b"U")
         ser.flush()
         line = ser.readline()
         out = line
-        if b'Bootloader' in line:
-            print('\n')
+        if b"Bootloader" in line:
+            print("\n")
             ser.readline()
             break
         if line is not None:
             out += ser.readline()
-            if b'Unknown' in out:
+            if b"Unknown" in out:
                 break
         retries += 1
         if retries > MAX_RETRIES:
-            sys.stderr.write('failed to connect to the board\n')
+            sys.stderr.write("failed to connect to the board\n")
             sys.exit(1)
         time.sleep(0.5)
-        print('.', end='')
+        print(".", end="")
         sys.stdout.flush()
 
     ser.reset_input_buffer()
@@ -116,7 +119,7 @@ def xmodem_send(serial, file, quiet=True):
     EOT = bytes(bytearray([0x04]))
     ACK = bytes(bytearray([0x06]))
     NAK = bytes(bytearray([0x15]))
-    NCG = b'C'
+    NCG = b"C"
     DATA_SIZE = 128
 
     t = 0
@@ -124,7 +127,7 @@ def xmodem_send(serial, file, quiet=True):
         if serial.read(1) != NCG:
             t = t + 1
             if t == 10:
-                print('*', end='')
+                print("*", end="")
                 sys.stdout.flush()
                 return False
         else:
@@ -150,7 +153,7 @@ def xmodem_send(serial, file, quiet=True):
             answer = serial.read(1)
             if answer == NAK:
                 if not quiet:
-                    print('!', end='')
+                    print("!", end="")
                     sys.stdout.flush()
                 retries += 1
                 if retries > MAX_RETRIES:
@@ -160,15 +163,15 @@ def xmodem_send(serial, file, quiet=True):
             if answer == ACK:
                 retries = 0
                 tx_size += DATA_SIZE
-                if not tx_size % (1024*10):
-                    print('.', end='')
+                if not tx_size % (1024 * 10):
+                    print(".", end="")
                     sys.stdout.flush()
                 break
             # If got nothing, exit
             serial.write(EOT)
             serial.flush()
             if not quiet:
-                print('$', end='')
+                print("$", end="")
                 sys.stdout.flush()
             return False
         data = bytearray(file.read(DATA_SIZE))
@@ -180,18 +183,19 @@ def xmodem_send(serial, file, quiet=True):
         return False
     return True
 
+
 def update_stream(ser, command, stream):
     sys.stdout.flush()
     retries = 3
     while True:
         stream.seek(0)
         ser.reset_input_buffer()
-        ser.write(bytearray(command.encode('utf-8')))
+        ser.write(bytearray(command.encode("utf-8")))
         ser.flush()
-        out = b''
+        out = b""
         out += ser.readline()
         out += ser.readline()
-        if b'Ready' in out:
+        if b"Ready" in out:
             if xmodem_send(ser, stream):
                 stream.close()
                 return True
@@ -201,22 +205,26 @@ def update_stream(ser, command, stream):
         else:
             time.sleep(1)
 
-    sys.stderr.write('failed\n')
+    sys.stderr.write("failed\n")
     return False
+
 
 def update_image(ser, command, filename):
     try:
-        stream = open(filename, 'rb')
+        stream = open(filename, "rb")
     except IOError:
-        sys.stderr.write('failed to open the file\n')
+        sys.stderr.write("failed to open the file\n")
         return False
-    print('\nProgramming %s (%dK) '
-          % (filename, (os.path.getsize(filename)+1023)/1024), end='')
+    print(
+        "\nProgramming %s (%dK) "
+        % (filename, (os.path.getsize(filename) + 1023) / 1024),
+        end="",
+    )
     return update_stream(ser, command, stream)
 
 
 def jump_to_app(ser):
-    ser.write(b'b')
+    ser.write(b"b")
     ser.flush()
 
 
@@ -224,111 +232,179 @@ def get_id(ser):
     MAX_RETRIES = 2
     retries = 0
     while True:
-        ser.write(b'i')
+        ser.write(b"i")
         ser.flush()
-        out = b''
+        out = b""
         ser.readline()
         out += ser.readline()
 
-        if b'Unknown' in out:
+        if b"Unknown" in out:
             retries += 1
         else:
-            print('ID:',end='')
-            print(out.decode('utf-8'))
+            print("ID:", end="")
+            print(out.decode("utf-8"))
             break
         if retries > MAX_RETRIES:
-            print('Failed to read ID\n')
+            print("Failed to read ID\n")
             break
+
 
 def get_regcode(ser):
     MAX_RETRIES = 2
     retries = 0
     while True:
-        ser.write(b'g')
+        ser.write(b"g")
         ser.flush()
-        out = b''
+        out = b""
         ser.readline()
         out += ser.readline()
 
-        if b'Unknown' in out:
+        if b"Unknown" in out:
             retries += 1
         else:
-            print('Registration code:',end='')
-            print(out.decode('utf-8'))
+            print("Registration code:", end="")
+            print(out.decode("utf-8"))
             break
         if retries > MAX_RETRIES:
-            print('Failed to read regcode\n')
+            print("Failed to read regcode\n")
             break
+
 
 def get_version(ser):
     MAX_RETRIES = 2
     retries = 0
     while True:
-        ser.write(b'V')
+        ser.write(b"V")
         ser.flush()
-        out = b''
+        out = b""
         ser.readline()
         out += ser.readline()
 
-        if b'Unknown' in out:
+        if b"Unknown" in out:
             retries += 1
         else:
-            print(out.decode('utf-8'))
+            print(out.decode("utf-8"))
             break
         if retries > MAX_RETRIES:
-            print(out.decode('utf-8'))
+            print(out.decode("utf-8"))
             break
 
+
 ser = None
-FIRMWARE_START_ADDRESS=0x4000
+FIRMWARE_START_ADDRESS = 0x4000
+
 
 def main():
 
-    port_name = 'None'
+    port_name = "None"
 
     import serial.tools.list_ports
+
     if serial.tools.list_ports.comports():
         port_name = serial.tools.list_ports.comports()[0].device
 
-    parser = argparse.ArgumentParser(description='Myriota device updater',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-f", "--system_image", dest='system_image_name',
-                        help='system image FILE to update with', metavar='FILE')
-    parser.add_argument("-u", "--user_app", dest='user_app_name',
-                        help='user application FILE to update with', metavar='FILE')
-    parser.add_argument('-r', '--raw', nargs=2, dest='raw_commands',
-                        action='append', metavar=('raw_command', 'FILE'),
-                        help='use raw command and FILE pair to update, can have multiple')
-    parser.add_argument('-p', '--port', dest='portname', metavar='PORT', default=port_name,
-                        help='serial PORT the Myriota device is connected to, e.g. /dev/ttyUSB0')
-    parser.add_argument('-w', '--wait', dest='wait_flag', action='store_true', default=False,
-                        help='wait for PORT to be available')
-    parser.add_argument('-s', '--start', dest='start_flag', action='store_true',
-                        default=False,
-                        help='start the application after update')
-    parser.add_argument('-i', '--id', dest='get_id_flag', action='store_true',
-                        default=False,
-                        help='get ID')
-    parser.add_argument('-c', '--regcode', dest='get_regcode_flag', action='store_true',
-                        default=False,
-                        help='get registration code')
-    parser.add_argument('-v', '--version', dest='get_version_flag', action='store_true',
-                        default=False,
-                        help='get bootloader version (only support 0.9.0 or later)')
-    parser.add_argument("-b", "--baudrate", dest="baud_rate", metavar='BAUDRATE',
-                        default=115200, help="set the serial port BAUDRATE between 9600 and 921600")
+    parser = argparse.ArgumentParser(
+        description="Myriota device updater",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-f",
+        "--system_image",
+        dest="system_image_name",
+        help="system image FILE to update with",
+        metavar="FILE",
+    )
+    parser.add_argument(
+        "-u",
+        "--user_app",
+        dest="user_app_name",
+        help="user application FILE to update with",
+        metavar="FILE",
+    )
+    parser.add_argument(
+        "-n",
+        "--network_info",
+        dest="network_info_bin_name",
+        help="network info binary FILE to update with",
+        metavar="FILE",
+    )
+    parser.add_argument(
+        "-r",
+        "--raw",
+        nargs=2,
+        dest="raw_commands",
+        action="append",
+        metavar=("raw_command", "FILE"),
+        help="use raw command and FILE pair to update, can have multiple",
+    )
+    parser.add_argument(
+        "-p",
+        "--port",
+        dest="portname",
+        metavar="PORT",
+        default=port_name,
+        help="serial PORT the Myriota device is connected to, e.g. /dev/ttyUSB0",
+    )
+    parser.add_argument(
+        "-w",
+        "--wait",
+        dest="wait_flag",
+        action="store_true",
+        default=False,
+        help="wait for PORT to be available",
+    )
+    parser.add_argument(
+        "-s",
+        "--start",
+        dest="start_flag",
+        action="store_true",
+        default=False,
+        help="start the application after update",
+    )
+    parser.add_argument(
+        "-i",
+        "--id",
+        dest="get_id_flag",
+        action="store_true",
+        default=False,
+        help="get ID",
+    )
+    parser.add_argument(
+        "-c",
+        "--regcode",
+        dest="get_regcode_flag",
+        action="store_true",
+        default=False,
+        help="get registration code",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        dest="get_version_flag",
+        action="store_true",
+        default=False,
+        help="get bootloader version (only support 0.9.0 or later)",
+    )
+    parser.add_argument(
+        "-b",
+        "--baudrate",
+        dest="baud_rate",
+        metavar="BAUDRATE",
+        default=115200,
+        help="set the serial port BAUDRATE between 9600 and 921600",
+    )
     args = parser.parse_args()
 
-    if args.portname == 'None':
+    if args.portname == "None":
         parser.error("Please specify the serial port.")
     port_name = args.portname
 
     if args.baud_rate:
         if int(args.baud_rate) < 9600:
-            print('Baudrate fails, minimum is 9600')
+            print("Baudrate fails, minimum is 9600")
             sys.exit(0)
         elif int(args.baud_rate) > 921600:
-            print('Baudrate fails, maximum is 921600')
+            print("Baudrate fails, maximum is 921600")
             sys.exit(0)
         else:
             br = args.baud_rate
@@ -336,10 +412,10 @@ def main():
         br = 115200
 
     if args.wait_flag:
-        print('Waiting for serial port', port_name, br)
+        print("Waiting for serial port", port_name, br)
         serial_port = wait_for_serial_port(port_name, br)
     else:
-        print('Using serial port', port_name, br)
+        print("Using serial port", port_name, br)
         serial_port = open_serial_port(port_name, br)
     capture_bootloader(serial_port)
 
@@ -357,9 +433,11 @@ def main():
 
     update_commands = []
     if args.system_image_name:
-        update_commands.append(['a%x' % FIRMWARE_START_ADDRESS, args.system_image_name])
+        update_commands.append(["a%x" % FIRMWARE_START_ADDRESS, args.system_image_name])
     if args.user_app_name:
-        update_commands.append(['s', args.user_app_name])
+        update_commands.append(["s", args.user_app_name])
+    if args.network_info_bin_name:
+        update_commands.append(["o", args.network_info_bin_name])
     if args.raw_commands is not None:
         update_commands += args.raw_commands
 
@@ -368,19 +446,20 @@ def main():
 
     for d in update_commands:
         if update_image(serial_port, d[0], d[1]):
-            print('done')
+            print("done")
         else:
             serial_port.close()
             sys.exit(1)
 
-    # Force to clear network info
-    zero_stream = BytesIO(b'\0\0\0\0\0\0\0\0\0\0')
-    if not update_stream(serial_port, 'o', zero_stream):
-        print('Update failed')
-        sys.exit(1)
+    if not args.network_info_bin_name:
+        # Force to clear network info
+        zero_stream = BytesIO(b"\0\0\0\0\0\0\0\0\0\0")
+        if not update_stream(serial_port, "o", zero_stream):
+            print("Update failed")
+            sys.exit(1)
 
     if args.start_flag:
-        print('Starting the application')
+        print("Starting the application")
         jump_to_app(serial_port)
 
     serial_port.close()
