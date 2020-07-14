@@ -12,9 +12,9 @@
 # limitations under the License.
 
 
-PROGRAM_NAME = rf_test
+PROGRAM_NAME = rx
 
-ROOTDIR ?= $(abspath ../..)
+ROOTDIR ?= $(abspath ../../..)
 
 APP_SRC = $(BSP_PATH)/bsp.c main.c
 

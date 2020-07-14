@@ -25,6 +25,7 @@
 
 #define RECEIVE_TIMEOUT 100  // [ms]
 #define ACK_STRING "\nOK\n"
+#define OVERLOAD_STRING "\nOVERLOADED\n"
 
 static void *leuart_handle = NULL;
 
@@ -36,9 +37,10 @@ int UARTReadStringWithTimeout(void *Handle, uint8_t *Rx, size_t MaxLength) {
   while (TickGet() - start < RECEIVE_TIMEOUT) {
     uint8_t ch;
     if (UARTRead(Handle, &ch, 1) == 1) {
-      Rx[count] = ch;
+      if (count < MaxLength) {
+        Rx[count] = ch;
+      }
       count++;
-      if (count == MaxLength) break;
     }
   }
   return count;
@@ -47,7 +49,11 @@ int UARTReadStringWithTimeout(void *Handle, uint8_t *Rx, size_t MaxLength) {
 static time_t UartComm() {
   uint8_t Rx[MAX_MESSAGE_SIZE] = {0};
   int len = UARTReadStringWithTimeout(leuart_handle, Rx, MAX_MESSAGE_SIZE);
-  if (len > 0) {
+  if (len > MAX_MESSAGE_SIZE) {
+    printf("LEUART RX buffer overloaded\n");
+    UARTWrite(leuart_handle, (uint8_t *)OVERLOAD_STRING,
+              strlen(OVERLOAD_STRING));
+  } else if (len > 0) {
     UARTWrite(leuart_handle, (uint8_t *)Rx, len);
     UARTWrite(leuart_handle, (uint8_t *)ACK_STRING, strlen(ACK_STRING));
     ScheduleMessage(Rx, len);
@@ -57,7 +63,6 @@ static time_t UartComm() {
   } else {
     printf("No data received\n");
   }
-
   return OnLeuartReceive();
 }
 

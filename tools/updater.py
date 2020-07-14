@@ -338,6 +338,13 @@ def main():
         help="use raw command and FILE pair to update, can have multiple",
     )
     parser.add_argument(
+        "-t",
+        "--test_image",
+        dest="test_image_name",
+        help="test image FILE to update with",
+        metavar="FILE",
+    )
+    parser.add_argument(
         "-p",
         "--port",
         dest="portname",
@@ -440,6 +447,8 @@ def main():
         update_commands.append(["o", args.network_info_bin_name])
     if args.raw_commands is not None:
         update_commands += args.raw_commands
+    if args.test_image_name:
+        update_commands.append(["a%x" % FIRMWARE_START_ADDRESS, args.test_image_name])
 
     if not update_commands:
         parser.error("Please specify the files to program.")
@@ -451,7 +460,7 @@ def main():
             serial_port.close()
             sys.exit(1)
 
-    if not args.network_info_bin_name:
+    if not args.network_info_bin_name and not args.test_image_name:
         # Force to clear network info
         zero_stream = BytesIO(b"\0\0\0\0\0\0\0\0\0\0")
         if not update_stream(serial_port, "o", zero_stream):

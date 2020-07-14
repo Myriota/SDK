@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1
+
+Fixes:
+
+- Updates network information revision
+
 ## 1.3.0
 
 API changes:
@@ -9,6 +15,7 @@ API changes:
 
 Improvements:
 
+- Increases robustness to service outage
 - Adds support to update network information via updater.py
 - Improves Sense&Locate example
 - Reformats Python tools

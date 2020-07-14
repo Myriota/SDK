@@ -25,11 +25,11 @@ int main(int argc, char **argv) {
       "Input samples via stdin, output samples are written to stdout.\n");
   cmd_parser.add<std::string>("from", 'f',
                               "input data type: double, float, uint8, "
-                              "int8, int16, uint16, int32",
+                              "int8, int16, uint16, int32 txt",
                               false, "double");
   cmd_parser.add<std::string>("to", 't',
                               "output data type: double, float, uint8, "
-                              "int8, int16, uint16, int32",
+                              "int8, int16, uint16, int32 txt",
                               false, "double");
   cmd_parser.add("exit-on-clip", 'e',
                  "program will exit with EXIT_FAILURE return code if any "
@@ -57,6 +57,8 @@ int main(int argc, char **argv) {
     read_sample = read_sample_of_type<uint16_t>;
   else if (input_type == "int32")
     read_sample = read_sample_of_type<int32_t>;
+  else if (input_type == "txt")
+    read_sample = read_sample_txt;
   else {
     std::cerr << "Input type must be one of double, float, uint8, int8, int16, "
                  "uint16, or int32"
@@ -81,6 +83,8 @@ int main(int argc, char **argv) {
     print_sample = print_sample_of_type<uint16_t>;
   else if (output_type == "int32")
     print_sample = print_sample_of_type<int32_t>;
+  else if (output_type == "txt")
+    print_sample = print_sample_txt;
   else {
     std::cerr
         << "Output type must be one of double, float, int8, int16, uint16, or "

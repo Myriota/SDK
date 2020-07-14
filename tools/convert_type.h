@@ -57,6 +57,21 @@ double limit(double x, bool &clipped) {
   return x;
 }
 
+// read sample from line, complex and imaginary parts tab seperated.
+bool read_sample_txt(FILE *infile, complex &sample) {
+  float r, i;
+  if (fscanf(infile, "%f\t%f%*[^\n]\n", &r, &i) != 2) return false;
+  sample = complex(r, i);
+  return true;
+}
+
+// print sample to a line in txt format, complex and imaginary parts tab
+// seperated.
+bool print_sample_txt(FILE *file, const complex sample) {
+  printf("%f\t%f\n", std::real(sample), std::imag(sample));
+  return false;  // never clip
+}
+
 // cast complex sample to templated type and print sample to stdout
 template <typename T>
 bool print_sample_of_type(FILE *file, const complex sample) {

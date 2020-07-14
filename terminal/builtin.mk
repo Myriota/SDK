@@ -19,7 +19,7 @@ ifeq ($(SATELLITES), )
 endif
 
 ACCESS_NODES_BASEURL?=https://static.myriota.com/access_nodes
-ACCESS_NODE_REVISION?=r9
+ACCESS_NODE_REVISION?=r10
 
 ifeq ($(NETWORK_INFO_DIR), )
 NETWORK_INFO:=$(SATELLITES)
