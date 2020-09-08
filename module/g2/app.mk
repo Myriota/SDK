@@ -17,14 +17,14 @@ export BOARD?=MyriotaDB
 OBJ_DIR:=obj
 NETWORK_INFO_DIR:=network_info
 
-include $(ROOTDIR)/terminal/g2/flags.mk
-include $(ROOTDIR)/terminal/builtin.mk
+include $(ROOTDIR)/module/g2/flags.mk
+include $(ROOTDIR)/module/builtin.mk
 
 PROGRAM_NAME?=app
 PROGRAM_NAME_BIN:=$(PROGRAM_NAME).bin
 PROGRAM_NAME_ELF:=$(PROGRAM_NAME).elf
 
-BSP_PATH?=$(ROOTDIR)/terminal/g2/boards/$(BOARD)
+BSP_PATH?=$(ROOTDIR)/module/g2/boards/$(BOARD)
 
 ifeq ($(SATELLITES),Lab)
 CFLAGS +=-DLAB_TEST
@@ -34,7 +34,7 @@ ifeq ($(SATELLITES),LabWithLocation)
 CFLAGS +=-DLAB_TEST_WITH_LOCATION
 endif
 
-LIB_DIR:=$(ROOTDIR)/terminal/g2
+LIB_DIR:=$(ROOTDIR)/module/g2
 LIBS:=$(LIB_DIR)/user_app_lib.a
 
 $(shell mkdir -p $(OBJ_DIR))
@@ -57,6 +57,10 @@ $(PROGRAM_NAME): $(PROGRAM_NAME_BIN)
 $(PROGRAM_NAME_BIN): $(OBJ_DIR)/$(PROGRAM_NAME_ELF) $(buildkey)
 	arm-none-eabi-objcopy -O binary $< $@
 	@(printf "0: "; xxd -ps -c32 $(buildkey)) | xxd -r - $@
+ifneq (,$(findstring $(BSP_PATH)/bsp.c,$(APP_SRC)))
+	@echo "***Default BSP will be deprecated, please create BSP file (bsp.c) under the application folder***"
+endif
+	@echo "Build has completed!"
 
 $(OBJ_DIR)/$(PROGRAM_NAME_ELF): $(LIBS) $(OBJ_LIST)
 	$(CC) $(OBJ_LIST) -Wl,--whole-archive $(LIBS) $(LDFLAGS) -Wl,--no-whole-archive -o $@

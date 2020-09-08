@@ -120,18 +120,21 @@ void myriota_read_bits(const uint8_t *from, uint8_t *to,
     myriota_set_bit(n - start, myriota_get_bit(n, from), to);
 }
 
-myriota_complex myriota_polar(myriota_decimal magnitude,
-                              myriota_decimal phase) {
+myriota_complex myriota_polar(double magnitude, double phase) {
   return magnitude * (cos(phase) + I * sin(phase));
 }
 
-myriota_complex myriota_rectangular(myriota_decimal re, myriota_decimal im) {
+myriota_complex myriota_rectangular(double re, double im) {
   return re + im * I;
 }
 
-myriota_decimal myriota_complex_norm(myriota_complex x) {
+double myriota_complex_norm(myriota_complex x) {
   return creal(x) * creal(x) + cimag(x) * cimag(x);
 }
+
+double myriota_complex_abs(myriota_complex x) { return cabs(x); }
+
+double myriota_complex_arg(myriota_complex x) { return carg(x); }
 
 double myriota_sinc(double t) {
   if (fabs(t) < 5e-3) return 1.0 - t * t * (1.0 / 6 - 1.0 / 120 * t * t);
@@ -476,17 +479,17 @@ void myriota_msequence(const int N, int *r) {
 
 myriota_complex myriota_discrete_fourier_transform(const unsigned int N,
                                                    const myriota_complex *in,
-                                                   const myriota_decimal f) {
+                                                   const double f) {
   myriota_complex sum = 0;
   for (int n = 0; n < N; n++) sum += myriota_polar(1, -2 * pi * n * f) * in[n];
   return sum;
 }
 
 // FFT/IFFT routine. (see pages 507-508 of Numerical Recipes in C)
-static void myriota_fft_internal(myriota_decimal data[], int nn, int isign) {
+static void myriota_fft_internal(double data[], int nn, int isign) {
   int n, mmax, m, j, istep, i;
-  myriota_decimal wtemp, wr, wpr, wpi, wi, theta;
-  myriota_decimal tempr, tempi;
+  double wtemp, wr, wpr, wpi, wi, theta;
+  double tempr, tempi;
 
   n = nn << 1;
   j = 1;
@@ -541,7 +544,7 @@ static void myriota_fft_internal2(const unsigned int N,
     error_message_and_exit(" N must be a power of 2 for FFT \n");
   }
   if (in != out) memcpy(out, in, sizeof(myriota_complex) * N);
-  myriota_fft_internal((myriota_decimal *)out, N, isign);
+  myriota_fft_internal((double *)out, N, isign);
 }
 
 void myriota_fft(const unsigned int N, const myriota_complex *in,
@@ -558,8 +561,7 @@ void myriota_inverse_fft(const unsigned int N, const myriota_complex *in,
 // The complex Phi function.
 // Used to compute the periodogram directly from Fourier
 // coefficients.
-myriota_complex periodogram_phi(const myriota_decimal f, const int N,
-                                const int M) {
+myriota_complex periodogram_phi(const double f, const int N, const int M) {
   // use 2 order approximation if near zero
   if (fabs(f) < 0.01 / N) {
     const myriota_complex a0 = N;
@@ -573,7 +575,7 @@ myriota_complex periodogram_phi(const myriota_decimal f, const int N,
   return a / b / M;
 }
 
-myriota_complex periodogram_time_domain_v(const myriota_decimal f,
+myriota_complex periodogram_time_domain_v(const double f,
                                           const myriota_complex *x,
                                           const int N) {
   myriota_complex s = 0;
@@ -582,13 +584,13 @@ myriota_complex periodogram_time_domain_v(const myriota_decimal f,
 }
 
 // Standard periodogram computed from time domain samples
-myriota_decimal periodogram_standard(const myriota_decimal f,
-                                     const myriota_complex *x, const int N) {
+double periodogram_standard(const double f, const myriota_complex *x,
+                            const int N) {
   myriota_complex s = periodogram_time_domain_v(f, x, N);
   return myriota_complex_norm(s) / N;
 }
 
-myriota_complex periodogram_frequency_domain_v(const myriota_decimal f,
+myriota_complex periodogram_frequency_domain_v(const double f,
                                                const myriota_complex *F,
                                                const int N, const int M) {
   myriota_complex v = 0;
@@ -598,9 +600,8 @@ myriota_complex periodogram_frequency_domain_v(const myriota_decimal f,
 }
 
 // Periodogram computed using frequenct domain samples
-myriota_decimal periodogram_frequency_domain(const myriota_decimal f,
-                                             const myriota_complex *F,
-                                             const int N, const int M) {
+double periodogram_frequency_domain(const double f, const myriota_complex *F,
+                                    const int N, const int M) {
   const myriota_complex v = periodogram_frequency_domain_v(f, F, N, M);
   return myriota_complex_norm(v) / N;
 }
@@ -622,10 +623,10 @@ double periodogram_brent_time_domain(const double f, void *data) {
 }
 
 void myriota_detect_sinusoid_inplace(myriota_complex *x, const unsigned int N,
-                                     myriota_decimal *frequency,
+                                     double *frequency,
                                      myriota_complex *amplitude,
-                                     myriota_decimal *residual_variance,
-                                     myriota_decimal *confidence) {
+                                     double *residual_variance,
+                                     double *confidence) {
   // compute residual variance
   double sigma2 = 0.0;
   for (int n = 0; n < N; n++) sigma2 += myriota_complex_norm(x[n]) / N;
@@ -665,137 +666,6 @@ void myriota_detect_sinusoid_inplace(myriota_complex *x, const unsigned int N,
   *amplitude = periodogram_time_domain_v(xhat, x, N) / N;
 }
 
-void myriota_matrix_multiply(const int M, const int N, const int K,
-                             const double *A, const double *B, double *X) {
-  for (int m = 0; m < M; m++) {
-    for (int k = 0; k < K; k++) {
-      double x = 0;
-      for (int n = 0; n < N; n++) x += *(A + N * m + n) * *(B + K * n + k);
-      *(X + K * m + k) = x;
-    }
-  }
-}
-
-void myriota_matrix_transpose(const int M, const int N, const double *A,
-                              double *B) {
-  for (int m = 0; m < M; m++)
-    for (int n = 0; n < N; n++) *(B + M * n + m) = *(A + N * m + n);
-}
-
-#define swap(type, a, b) \
-  {                      \
-    const type t = a;    \
-    a = b;               \
-    b = t;               \
-  }
-
-#define comp_LU(M, N, A, LU, piv)                                     \
-  {                                                                   \
-    for (int m = 0; m < M; m++)                                       \
-      for (int n = 0; n < N; n++) LU[m][n] = *(A + N * m + n);        \
-                                                                      \
-    for (int i = 0; i < M; i++) piv[i] = i;                           \
-    double pivsign = 1.0;                                             \
-                                                                      \
-    for (int k = 0; k < N; k++) {                                     \
-      int p = k;                                                      \
-      for (int i = k + 1; i < M; i++)                                 \
-        if (fabs(LU[i][k]) > fabs(LU[p][k])) p = i;                   \
-                                                                      \
-      if (p != k) {                                                   \
-        for (int j = 0; j < N; j++) swap(double, LU[p][j], LU[k][j]); \
-        swap(int, piv[p], piv[k]);                                    \
-        pivsign = -pivsign;                                           \
-      }                                                               \
-      if (LU[k][k] != 0.0) {                                          \
-        for (int i = k + 1; i < M; i++) {                             \
-          LU[i][k] = LU[i][k] / LU[k][k];                             \
-          for (int j = k + 1; j < N; j++)                             \
-            LU[i][j] = LU[i][j] - LU[i][k] * LU[k][j];                \
-        }                                                             \
-      }                                                               \
-    }                                                                 \
-  }
-
-int myriota_matrix_lu(const int M, const int N, const double *A, double *L,
-                      double *U, int *piv) {
-  if (M < N) return -1;
-
-  double LU[M][N];
-  comp_LU(M, N, A, LU, piv);
-
-  // set L
-  for (int m = 0; m < M; m++)
-    for (int n = 0; n < m; n++) *(L + N * m + n) = LU[m][n];  // lower
-  for (int n = 0; n < N; n++) *(L + N * n + n) = 1.0;         // diagonal is 1
-  for (int m = 0; m < M; m++)
-    for (int n = m + 1; n < N; n++) *(L + N * m + n) = 0.0;  // upper zeros
-
-  // set U
-  for (int m = 0; m < N; m++)
-    for (int n = 0; n < m; n++) *(U + N * m + n) = 0.0;  // lower zeros
-  for (int m = 0; m < N; m++)
-    for (int n = m; n < N; n++) *(U + N * m + n) = LU[m][n];  // upper
-
-  return 0;
-}
-
-int myriota_matrix_solve(const int N, const int K, const double *A,
-                         const double *Y, double *X) {
-  double LU[N][N];
-  int piv[N];
-  comp_LU(N, N, A, LU, piv);
-
-  // check if this matrix is singular
-  const double eps = 3e-16;
-  for (int n = 0; n < N; n++)
-    if (fabs(LU[n][n]) < eps) return -1;
-
-  // Copy NxK Y to pX with pivot
-  double pX[N][K];
-  for (int n = 0; n < N; n++)
-    for (int k = 0; k < K; k++) pX[n][k] = *(Y + K * piv[n] + k);
-
-  // Solve LZ = Y(piv,:)
-  for (int k = 0; k < N; k++)
-    for (int i = k + 1; i < N; i++)
-      for (int j = 0; j < K; j++) pX[i][j] -= pX[k][j] * LU[i][k];
-
-  // Solve UX = Z
-  for (int k = N - 1; k >= 0; k--) {
-    for (int j = 0; j < K; j++) pX[k][j] /= LU[k][k];
-    for (int i = 0; i < k; i++)
-      for (int j = 0; j < K; j++) pX[i][j] -= pX[k][j] * LU[i][k];
-  }
-
-  // copy result
-  for (int n = 0; n < N; n++)
-    for (int k = 0; k < K; k++) *(X + K * n + k) = pX[n][k];
-
-  return 0;
-}
-
-void myriota_matrix_print(const int M, const int N, const double *A, FILE *f) {
-  for (int m = 0; m < M; m++) {
-    for (int n = 0; n < N; n++) fprintf(f, "%f ", *(A + N * m + n));
-    fprintf(f, "\n");
-  }
-}
-
-void myriota_polyfit(const double *t, const double *x, const int N, const int r,
-                     double *a) {
-  double T[N][r + 1];
-  for (int n = 0; n < N; n++)
-    for (int i = 0; i <= r; i++) T[n][i] = pow(t[n], i);
-  double Tt[r + 1][N];
-  myriota_matrix_transpose(N, r + 1, &T[0][0], &Tt[0][0]);
-  double TtT[r + 1][r + 1];
-  myriota_matrix_multiply(r + 1, N, r + 1, &Tt[0][0], &T[0][0], &TtT[0][0]);
-  double Tx[r + 1];
-  myriota_matrix_multiply(r + 1, N, 1, &Tt[0][0], x, Tx);
-  myriota_matrix_solve(r + 1, 1, &TtT[0][0], Tx, a);
-}
-
 int myriota_sort_unique(void *base, size_t nitems, size_t size,
                         int (*cmp)(const void *, const void *)) {
   if (base == NULL) return 0;
@@ -811,157 +681,4 @@ int myriota_sort_unique(void *base, size_t nitems, size_t size,
     c++;
   }
   return c;
-}
-
-bool myriota_interval_empty(const myriota_interval a) { return a.min > a.max; }
-
-myriota_interval myriota_interval_intersect_pairwise(const myriota_interval a,
-                                                     const myriota_interval b) {
-  return (myriota_interval){fmax(a.min, b.min), fmin(a.max, b.max)};
-}
-
-int myriota_interval_union_pairwise(const myriota_interval a,
-                                    const myriota_interval b,
-                                    myriota_interval c[2]) {
-  const myriota_interval empty = {1, -1};
-  if (myriota_interval_empty(a) && myriota_interval_empty(b)) return 0;
-  if (myriota_interval_empty(a)) {
-    c[0] = b;
-    c[1] = empty;
-    return 1;
-  }
-  if (myriota_interval_empty(b)) {
-    c[0] = a;
-    c[1] = empty;
-    return 1;
-  }
-  const myriota_interval i = myriota_interval_intersect_pairwise(a, b);
-  if (myriota_interval_empty(i)) {
-    c[0] = a;
-    c[1] = b;
-    return 2;
-  }
-  c[0] = (myriota_interval){fmin(a.min, b.min), fmax(a.max, b.max)};
-  c[1] = empty;
-  return 1;
-}
-
-// sort in order of maximum interval then minimum interval
-static int cmp_interval(const void *_a, const void *_b) {
-  const myriota_interval *a = _a;
-  const myriota_interval *b = _b;
-  if (a->max < b->max) return -1;
-  if (a->max > b->max) return 1;
-  if (a->min < b->min) return -1;
-  if (a->min > b->min) return 1;
-  return 0;
-}
-
-int myriota_interval_compress(myriota_interval *a, const int alen) {
-  // sort in order of maximum
-  qsort(a, alen, sizeof(myriota_interval), cmp_interval);
-
-  // combine pairwise intervals
-  for (int i = alen - 1; i > 0; i--)
-    myriota_interval_union_pairwise(a[i - 1], a[i], &a[i - 1]);
-
-  // remove empty intervals
-  int l = 0;
-  for (int i = 0; i < alen; i++) {
-    if (myriota_interval_empty(a[i])) continue;
-    a[l] = a[i];
-    l++;
-  }
-  return l;
-}
-
-int myriota_interval_intersect(const myriota_interval *a, const int alen,
-                               const myriota_interval *b, const int blen,
-                               myriota_interval *c) {
-  myriota_interval tmp[alen + blen];
-  int clen = 0;
-  for (int i = 0; i < alen; i++) {
-    for (int j = 0; j < blen; j++) {
-      myriota_interval d = myriota_interval_intersect_pairwise(a[i], b[j]);
-      if (myriota_interval_empty(d)) continue;
-      clen = myriota_interval_union(tmp, clen, &d, 1, tmp);
-    }
-  }
-  memcpy(c, tmp, clen * sizeof(myriota_interval));
-  return clen;
-}
-
-int myriota_interval_union(const myriota_interval *a, const int alen,
-                           const myriota_interval *b, const int blen,
-                           myriota_interval *c) {
-  for (int i = 0; i < alen; i++) c[i] = a[i];
-  for (int i = 0; i < blen; i++) c[i + alen] = b[i];
-  return myriota_interval_compress(c, alen + blen);
-}
-
-bool myriota_interval_contains(const myriota_interval *A, const int Alen,
-                               double p) {
-  for (int i = 0; i < Alen; i++)
-    if (p >= A[i].min && p <= A[i].max) return true;
-  return false;
-}
-
-bool myriota_interval_intersects(const myriota_interval *A, const int Alen,
-                                 const myriota_interval b) {
-  if (myriota_interval_empty(b)) return false;
-  for (int i = 0; i < Alen; i++) {
-    if (b.max < A[i].min) return false;
-    if (b.min <= A[i].max) return true;
-  }
-  return false;
-}
-
-int myriota_interval_complement(const myriota_interval a,
-                                myriota_interval b[2]) {
-  // ~entire == empty
-  if ((myriota_isinf(a.min) < 0) && (myriota_isinf(a.max) > 0)) return 0;
-
-  // ~empty == entire
-  if (myriota_interval_empty(a)) {
-    b[0].min = -INFINITY;
-    b[0].max = INFINITY;
-    return 1;
-  }
-
-  if (myriota_isinf(a.min) < 0) {
-    b[0].min = a.max;
-    b[0].max = INFINITY;
-    return 1;
-  }
-
-  if (myriota_isinf(a.max) > 0) {
-    b[0].min = -INFINITY;
-    b[0].max = a.min;
-    return 1;
-  }
-
-  b[0].min = -INFINITY;
-  b[0].max = a.min;
-  b[1].min = a.max;
-  b[1].max = INFINITY;
-  return 2;
-}
-
-double myriota_interval_length(const myriota_interval *A, const int Alen) {
-  double d = 0;
-  for (int i = 0; i < Alen; i++) d += A[i].max - A[i].min;
-  return d;
-}
-
-double myriota_interval_uniform(const myriota_interval *A, const int Alen) {
-  if (Alen == 0) return NAN;  // must have some point in the interval
-  const double len = myriota_interval_length(A, Alen);
-  if (len == 0) return A[rand() % Alen].min;  // point mass case
-  double u = myriota_random_uniform() * len;
-  for (int i = 0; i < Alen; i++) {
-    const double a = A[i].max - A[i].min;
-    if (u < a) return A[i].min + u;
-    u = u - a;
-  }
-  return A[Alen - 1].max;
 }

@@ -25,12 +25,6 @@
 #include <string.h>
 #include <time.h>
 
-// double, float, etc. Default is double.
-// define MYRIOTA_DECIMAL at compile time if you want to change this.
-#ifndef MYRIOTA_DECIMAL
-#define MYRIOTA_DECIMAL double
-#endif
-
 // Force a compilation error if condition is true
 #ifndef BUILD_BUG_ON
 #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2 * !!(condition)]))
@@ -41,9 +35,8 @@
 // Get number of element in an array
 #define NUM_ELEMS(array) (sizeof(array) / sizeof((array)[0]))
 
-// Myriota's floating point and complex floating point types
-typedef MYRIOTA_DECIMAL myriota_decimal;
-typedef MYRIOTA_DECIMAL _Complex myriota_complex;
+// Myriota's complex floating point type
+typedef double _Complex myriota_complex;
 
 // Approximation of the irrational number
 #ifdef __ROOTCLING__

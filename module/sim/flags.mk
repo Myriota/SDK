@@ -12,4 +12,7 @@
 # limitations under the License.
 
 
-include $(ROOTDIR)/terminal/sim/app.mk
+##Default c compiler and flags
+CC = gcc
+CFLAGS = -std=gnu99 -g -Wall -Werror -fsanitize=address -I$(ROOTDIR) -I$(ROOTDIR)/module/include -I. -I$(ROOTDIR)/module/$(MODULE)/include -DDEBUG
+LDFLAGS = -lasan -lm -lcrypto -Wall -Werror -fdata-sections -ffunction-sections

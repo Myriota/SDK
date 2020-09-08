@@ -12,7 +12,7 @@
 # limitations under the License.
 
 
-# Set PLATFORM environment variable to choose target Myriota terminal.
-PLATFORM?=g2
+# Set MODULE environment variable to choose target Myriota terminal.
+MODULE?=g2
 
-include $(ROOTDIR)/terminal/$(PLATFORM)/app.mk
+include $(ROOTDIR)/module/$(MODULE)/app.mk

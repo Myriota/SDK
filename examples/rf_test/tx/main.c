@@ -11,9 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This example demonstrates how to use RF test command.
+// This example demonstrates how to use transmit related RF test API.
 //
 // Like the blinky example, this example runs in sandbox mode.
+
+// This example can be used to do RF TX power, current draw and RF path
+// connectivity checks as well. More information can be found in README file
 
 #include <unistd.h>
 #include "myriota_user_api.h"

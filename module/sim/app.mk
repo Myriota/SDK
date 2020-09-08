@@ -14,12 +14,12 @@
 OBJ_DIR:=obj
 NETWORK_INFO_DIR:=network_info
 
-include $(ROOTDIR)/terminal/sim/flags.mk
-include $(ROOTDIR)/terminal/builtin.mk
+include $(ROOTDIR)/module/sim/flags.mk
+include $(ROOTDIR)/module/builtin.mk
 
 $(shell mkdir -p $(OBJ_DIR))
 
-LIB_DIR:=$(ROOTDIR)/terminal/sim
+LIB_DIR:=$(ROOTDIR)/module/sim
 LIBS:=$(LIB_DIR)/sim.so
 APP_OBJ:=$(patsubst %.c, $(OBJ_DIR)/%.o, $(APP_SRC))
 SDK_OBJ:=$(builtin).o $(buildkey).o

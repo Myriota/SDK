@@ -11,7 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This example demonstrates how to use RF test command.
+// This example demonstrates how to use receive related RF test API.
+// Further information can be found in the README file
 //
 // Like the blinky example, this example runs in sandbox mode.
 
@@ -21,7 +22,7 @@
 #define MODULE_BAND_PIN PIN_BAND
 #define ANT_SEL_PIN PIN_GPIO6
 
-#define RX_DEFAULT_FREQUENCY 400000000
+#define RX_DEFAULT_FREQUENCY 400500000
 
 void AppInit() {}
 

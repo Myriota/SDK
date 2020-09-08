@@ -21,9 +21,12 @@ sudo -H pip install -r requirements.txt
 curl -O https://static.myriota.com/gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2
 sudo mkdir -p /opt/gcc-arm
 sudo tar -xjvf gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2 -C /opt/gcc-arm --strip-components=1
-sudo cp terminal/g2/99-myriota-g2.rules /etc/udev/rules.d
+sudo cp module/g2/99-myriota-g2.rules /etc/udev/rules.d
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
 # Satellite Simulator requirements
 sudo apt-get -y install build-essential rtl-sdr
 make -C tools/ satellite_simulator
+
+# Tools for testing 
+sudo apt-get -y install expect

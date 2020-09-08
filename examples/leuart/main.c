@@ -29,8 +29,7 @@
 
 static void *leuart_handle = NULL;
 
-// Read new line terminated string from UART with timeout
-// Return number of bytes read
+// Read string from UART with timeout, return number of bytes read
 int UARTReadStringWithTimeout(void *Handle, uint8_t *Rx, size_t MaxLength) {
   const uint32_t start = TickGet();
   int count = 0;

@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Demonstrates putting the Myriota terminal in "sandbox" by overriding the
+// Demonstrates putting the Myriota Module in "sandbox" by overriding the
 // BoardStart() API. Also demonstrates how to control the LED.
 //
 // Sandbox mode is useful for development because system initialisation is
-// faster. Sandbox mode is not for deployment. In this mode the terminal will
+// faster. Sandbox mode is not for deployment. In this mode the module will
 // not transmit data to satellite.
 
 #include "myriota_user_api.h"

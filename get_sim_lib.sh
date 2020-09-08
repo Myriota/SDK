@@ -14,7 +14,7 @@
 
 
 remote_sim_lib_name=sim_$(sed 's/\r//g;s/\./_/g' VERSION).so
-local_sim_lib_name=terminal/sim/sim.so
+local_sim_lib_name=module/sim/sim.so
 
 set -e
 rm -f ${local_sim_lib_name}

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// User programming interface for the Myriota terminal
+// User programming interface for the Myriota Module
 
 #ifndef MYRIOTA_USER_API_H
 #define MYRIOTA_USER_API_H
@@ -123,7 +123,7 @@ void SaveMessages(void);
 void Delay(uint32_t mSec);
 /// Delay for a number of microseconds
 void MicroSecondDelay(uint32_t uSec);
-/// Put the system in lower power mode for Sec seconds.
+/// Put the system in lower power mode for \p Sec seconds.
 /// The current job won't be interrupted by other jobs while sleeping.
 void Sleep(uint32_t Sec);
 

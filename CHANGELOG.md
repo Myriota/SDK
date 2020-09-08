@@ -1,10 +1,32 @@
 # Changelog
 
+## 1.3.2
+
+Improvements:
+
+- Adds development board v2 support
+- Adds modem with AT commands support example
+- Adds default bsp file to all examples
+- Adds documentation to RF test examples
+- Reduces current consumption of Sleep API
+- Adds an example to test GNSS chip
+- Renames terminal folder to module
+- Adds versioning support to network information
+
+Fixes:
+
+- Fixes an issue where the module periodically wakes up for a very short period of time if LEUART or pulse counter remains enabled in sleep mode
+- Fixes certificate deletion issue in network information
+
 ## 1.3.1
 
 Fixes:
 
 - Updates network information revision
+
+Improvements:
+
+- Improves LEUART and RF test examples
 
 ## 1.3.0
 

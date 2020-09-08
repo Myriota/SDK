@@ -79,13 +79,19 @@ void myriota_read_bits(const uint8_t *from, uint8_t *to,
 
 // Returns a complex number from rectangular coordinates, i.e.
 // from real and imaginary parts.
-myriota_complex myriota_rectangular(myriota_decimal re, myriota_decimal im);
+myriota_complex myriota_rectangular(double re, double im);
 
 // Complex number from magnitude and phase in radians
-myriota_complex myriota_polar(myriota_decimal magnitude, myriota_decimal phase);
+myriota_complex myriota_polar(double magnitude, double phase);
 
 // Norm (magnitude squared) of a complex number
-myriota_decimal myriota_complex_norm(myriota_complex x);
+double myriota_complex_norm(myriota_complex x);
+
+// Magnitude (absolute value) of a complex number
+double myriota_complex_abs(myriota_complex x);
+
+// Phase/argument/angle of a complex number
+double myriota_complex_arg(myriota_complex x);
 
 // Sinc function
 double myriota_sinc(double t);
@@ -346,7 +352,7 @@ void myriota_msequence(const int N, int *r);
 // zero = myriota_discrete_fourier_transform(4,in,0.5);
 myriota_complex myriota_discrete_fourier_transform(const unsigned int N,
                                                    const myriota_complex *in,
-                                                   const myriota_decimal f);
+                                                   const double f);
 
 // Computes the fast Fourier transform of the complex array of length N and
 // returns result into complex array out. N must be a power of 2.
@@ -379,105 +385,15 @@ void myriota_inverse_fft(const unsigned int N, const myriota_complex *in,
 // N need not be a power of 2 but x must be zero padded to the lengh a power of
 // two greater than N, i.e., to length myriota_greater_power_of_two(N)
 void myriota_detect_sinusoid_inplace(myriota_complex *x, const unsigned int N,
-                                     myriota_decimal *frequency,
+                                     double *frequency,
                                      myriota_complex *amplitude,
-                                     myriota_decimal *residual_variance,
-                                     myriota_decimal *confidence);
-
-// Multiply MxN matrix A by N by K matrix B producing M by K matrix X.
-// Matrices are assumed flattened rowise, that is, one row after the next.
-void myriota_matrix_multiply(const int M, const int N, const int K,
-                             const double *A, const double *B, double *X);
-
-// Find N by K matrix X such that AX = Y where A is a non-singular N by N matrix
-// and Y is an N by K matrix.
-int myriota_matrix_solve(const int N, const int K, const double *A,
-                         const double *Y, double *X);
-
-// Return transpose of matrix A into B.
-void myriota_matrix_transpose(const int M, const int N, const double *A,
-                              double *B);
-
-// LUP decomposition of M by N matrix A. Returns M by N matrix L, permutation
-// vector p of length M, and N by N matrix U such that permuting the rows of A
-// by p results in the matrix LU, that is, results in the multiplication of
-// matrix L by matrix U. Requires M >= N. Returns -1 if this is not the case.
-// Returns 0 on success.
-int myriota_matrix_lu(const int M, const int N, const double *A, double *L,
-                      double *U, int *p);
-
-void myriota_matrix_print(const int M, const int N, const double *A, FILE *f);
-
-// Least sequare fit polynomial a[0] + a[1] t + a[2] t^2 + ... a[r-1] t^r of
-// order r to data x. Both t and x assumed to be arrays of length N.
-void myriota_polyfit(const double *t, const double *x, const int N, const int r,
-                     double *a);
+                                     double *residual_variance,
+                                     double *confidence);
 
 // Like the standard qsort but also removes duplicates. Returns the number of
 // unique elements.
 int myriota_sort_unique(void *base, size_t nitems, size_t size,
                         int (*compar)(const void *, const void *));
-
-// Represents the closed interval [min, max] of the real line.
-// The interval is empty if min > max
-typedef struct {
-  double min;
-  double max;
-} myriota_interval;
-
-// Returns true if a is empty
-bool myriota_interval_empty(const myriota_interval a);
-
-// Return the intersection of two interval a and b
-myriota_interval myriota_interval_intersect_pairwise(const myriota_interval a,
-                                                     const myriota_interval b);
-
-// Write the union of two interval into c.
-// Return number of intervals in c, ie.g 0 if union in empty, 1 if it contains a
-// single interval, and 2 if the union contains two disjoint intervals
-int myriota_interval_union_pairwise(const myriota_interval a,
-                                    const myriota_interval b,
-                                    myriota_interval c[2]);
-
-// Writes the intersection of two sets of intervals into c
-// c must be allocated with alen + blen items.
-// Returns the number of intervals in c
-int myriota_interval_intersect(const myriota_interval *a, const int alen,
-                               const myriota_interval *b, const int blen,
-                               myriota_interval *c);
-
-// Writes the union of two sets of intervals into c
-// c must be allocated with alen + blen items.
-// Returns the number of intervals in c
-int myriota_interval_union(const myriota_interval *a, const int alen,
-                           const myriota_interval *b, const int blen,
-                           myriota_interval *c);
-
-// Sort intervals a and compress then to minimum possible size.
-// Returns new size.
-int myriota_interval_compress(myriota_interval *a, const int alen);
-
-// Return true if p is contained in the set of intervals A
-// Assumes A is in compressed form as given by myriota_interval_compress
-bool myriota_interval_contains(const myriota_interval *A, const int Alen,
-                               double p);
-
-// Returns true if the interval b intersects with the set of intervals A
-// Assumes A is in compressed form as given by myriota_interval_compress
-bool myriota_interval_intersects(const myriota_interval *A, const int Alen,
-                                 const myriota_interval b);
-
-// Writes the complement of the interval a into interval array b of size 2.
-// Returns the number of intervals written, which is at most 2.
-int myriota_interval_complement(const myriota_interval a, myriota_interval *b);
-
-// Return the sum of the lengths if the intervals in A.
-// Assumes A is in compressed form as given by myriota_interval_compress
-double myriota_interval_length(const myriota_interval *A, const int Alen);
-
-// Returns a number uniformly distributed on the set of intervals A
-// Assumes A is in compressed form as given by myriota_interval_compress
-double myriota_interval_uniform(const myriota_interval *A, const int Alen);
 
 #ifdef __cplusplus
 }
@@ -488,8 +404,7 @@ double myriota_interval_uniform(const myriota_interval *A, const int Alen);
 
 namespace myriota {
 
-typedef MYRIOTA_DECIMAL decimal;
-typedef std::complex<decimal> complex;
+typedef std::complex<double> complex;
 
 // Type generic circular buffer class that supports sequential write and
 // random access.

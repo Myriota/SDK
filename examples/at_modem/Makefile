@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2020, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -12,7 +12,16 @@
 # limitations under the License.
 
 
-##Default c compiler and flags
-CC = gcc
-CFLAGS = -std=gnu99 -g -Wall -Werror -fsanitize=address -I$(ROOTDIR) -I$(ROOTDIR)/terminal/include -I. -I$(ROOTDIR)/terminal/$(PLATFORM)/include -DDEBUG
-LDFLAGS = -lasan -lm -lcrypto -Wall -Werror -fdata-sections -ffunction-sections
+PROGRAM_NAME = at_modem
+
+ROOTDIR ?= $(abspath ../..)
+
+APP_SRC = main.c at.c
+
+ifeq (sim, $(notdir $(MODULE)))
+	APP_SRC += sim.c
+else
+	APP_SRC += bsp.c
+endif
+
+include $(ROOTDIR)/module/app.mk

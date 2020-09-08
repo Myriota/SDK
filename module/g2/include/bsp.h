@@ -21,7 +21,7 @@
 /// @defgroup BSP_api BSP API
 /// Board specific implementation of the board support package (BSP).
 /// <a
-/// href="https://github.com/Myriota/SDK/blob/master/terminal/g2/boards/MyriotaDB/bsp.c">Myriota
+/// href="https://github.com/Myriota/SDK/blob/master/module/g2/boards/MyriotaDB/bsp.c">Myriota
 /// development board BSP</a>
 ///  is used by default.
 /// Create bsp.c under application folder to override default BSP file
@@ -107,7 +107,14 @@ typedef enum {
   RADIO_MODE_INIT,    ///< radio initialisation
   RADIO_MODE_DEINIT,  ///< radio de-initialisation
 } RadioMode;
-typedef enum { RADIO_BAND_VHF, RADIO_BAND_UHF, RADIO_BAND_ISM } RadioBand;
+
+typedef enum {
+  RADIO_BAND_VHF,
+  RADIO_BAND_UHF,
+  RADIO_BAND_LPD,
+  RADIO_BAND_UNSUPPORTED,
+} RadioBand;
+
 /// Returns 0 if succeeded and -1 if failed.
 int BoardAntennaSelect(RadioMode Mode, RadioBand Band);
 

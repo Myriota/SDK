@@ -12,13 +12,13 @@
 // limitations under the License.
 
 // This example demonstrates uart interface communication between an external
-// device and the Myriota device. This also demonstrates a basic modem
+// device and the Myriota Module. This also demonstrates a basic modem
 // application. Operates as follows:
-// 1. the external device wakes up the terminal by setting GPIO0 high,
-// 2. waits for the "READY\n" string from Myriota device,
+// 1. the external device wakes up the module by setting GPIO0 high,
+// 2. waits for the "READY\n" string from the Myriota Module,
 // 3. sends messsage string terminated by "\n",
 // 4. sets GPIO0 low again.
-// 5. The Myriota device acknowledges reception with string "\nOK\n",
+// 5. The Myriota Module acknowledges reception with string "\nOK\n",
 // 6. then schedules the message string for satellite transmission.
 
 #include <string.h>

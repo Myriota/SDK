@@ -4,10 +4,10 @@ ROOTDIR ?= $(abspath ../..)
 
 APP_SRC = main.c
 
-ifeq (sim, $(notdir $(PLATFORM)))
+ifeq (sim, $(notdir $(MODULE)))
 	APP_SRC += sim.c
 else
 	APP_SRC += bsp.c
 endif
 
-include $(ROOTDIR)/terminal/app.mk
+include $(ROOTDIR)/module/app.mk

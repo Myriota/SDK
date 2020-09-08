@@ -16,6 +16,6 @@ PROGRAM_NAME = rx
 
 ROOTDIR ?= $(abspath ../../..)
 
-APP_SRC = $(BSP_PATH)/bsp.c main.c
+APP_SRC = bsp.c main.c
 
-include $(ROOTDIR)/terminal/app.mk
+include $(ROOTDIR)/module/app.mk
