@@ -4,6 +4,7 @@
 
  - LEUART Tx/Rx
  - GND
+ - GPIO7(optional, outputs high to indicate a job is running)
 
 ## Serial communication configuration
 
@@ -66,6 +67,7 @@ Failure: `FAIL+<CMD>=<VALUE>`
 | Registration code | REGCODE  | Registration code | - |
 | Get time          | TIME     | Unix epoch time | E.g. 1595911282 |
 | Get location      | LOCATION | Latitude and longitude of last GNSS fix, scaled by 1e7 | E.g. -349205499,1386086737 |
+| Get suspend mode  | SUSPEND  | 0: disabled, 1:enabled | - |
 
 ### Controls
 
@@ -91,6 +93,7 @@ Failure: `FAIL+<CMD>` or `FAIL+<CMD>=<PARAMETER>`
 | Start GNSS fix        | GNSSFIX  | N/A | Return OK immediately then return OK again when successful or return FAIL after 90s timeout |
 | RSSI test             | RSSI     | Frequency in Hz. E.g. 400000000 | Return "OK+TXSTART=RSSI" in dBm on the specified frequency |
 | Schedule message      | SMSG     | Hex string of the message | The length should be even and no more than 40 hex characters |
+| Change suspend mode   | SUSPEND  | 1 to enable and 0 to disable | - |
 
 - RF TX parameter
 

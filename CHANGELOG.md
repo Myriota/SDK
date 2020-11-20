@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.4.0
+
+API changes:
+
+- Adds APIs to support suspend mode
+- Adds API MessageQueueClear to clear message queue
+- Adds pull option to pulse counter pin in PulseCounterInit API
+- Changes the TX on duration of RF test TX API
+- Changes return value of ScheduleMessage
+- Deprecates DUMPTX environment variable and replaces it with SATTEST
+
+Improvements:
+
+- Adds suppend mode support
+- Adds an option to updater.py to dump device debug output
+- Reduces module downlink energy consumption
+- Improves updater.py and log-util.py to automatically detect the serial port to use
+- Improves i2c_spi example to set SPI baud rate accurately
+
+Fixes:
+
+- Fixes the Band parameter to BoardAntennaSelect BSP API when the module is receiving
+- Fixes a baud rate accuracy issue in SPI API when SPI_BAUDRATE_MAX is used
+
 ## 1.3.2
 
 Improvements:

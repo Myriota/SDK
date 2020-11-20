@@ -28,9 +28,9 @@
 static void *DebugHandle;
 
 #if defined(LAB_TEST)
-#define BOARD_ENV "GNSSFIX=0;DUMPTX=1"
+#define BOARD_ENV "GNSSFIX=0;SATTEST=240"
 #elif defined(LAB_TEST_WITH_LOCATION)
-#define BOARD_ENV "DUMPTX=1"
+#define BOARD_ENV "SATTEST=240"
 #else
 #define BOARD_ENV ""
 #endif

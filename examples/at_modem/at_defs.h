@@ -38,6 +38,7 @@ enum {
   AT_QUERY_REG_CODE,
   AT_QUERY_TIME,
   AT_QUERY_LOCATION,
+  AT_QUERY_SUSPEND_MODE,
   AT_QUERY_NUM,
 };
 
@@ -48,6 +49,7 @@ enum {
   AT_CONTROL_GNSS_FIX,
   AT_CONTROL_RSSI,
   AT_CONTROL_SCHEDULE_MESSAGE,
+  AT_CONTROL_SUSPEND_MODE,
   AT_CONTROL_NUM,
 };
 
@@ -63,13 +65,11 @@ enum {
 
 enum { AT_STATE_INIT, AT_STATE_GNSS_ACQ, AT_STATE_READY, AT_STATE_UNKNOWN };
 
-static const char* Queries[] = {
-    "MSGQ", "STATE", "VSDK", "MID", "REGCODE", "TIME", "LOCATION",
-};
+static const char* Queries[] = {"MSGQ",    "STATE", "VSDK",     "MID",
+                                "REGCODE", "TIME",  "LOCATION", "SUSPEND"};
 
-static const char* Controls[] = {
-    "SAVEMSG", "TXSTART", "TXSTOP", "GNSSFIX", "RSSI", "SMSG",
-};
+static const char* Controls[] = {"SAVEMSG", "TXSTART", "TXSTOP", "GNSSFIX",
+                                 "RSSI",    "SMSG",    "SUSPEND"};
 
 static const char* ErrorCodes[] = {
     "INVALID_PARAMETER", "MESSAGE_TOO_LONG",    "BUFFER_OVERFLOW",

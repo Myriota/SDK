@@ -198,7 +198,8 @@ int UARTRead(void *Handle, uint8_t *Rx, size_t Length);
 enum PulseCounterOption {
   PCNT_EDGE_FALLING = 1 << 0,  ///< count on falling edge, default rising edge
   PCNT_DEBOUNCE_DISABLE =
-      1 << 1  ///< disable hardware debouncing, default enabled for about 160us
+      1 << 1,  ///< disable hardware debouncing, default enabled for about 160us
+  PCNT_PULL_UP = 1 << 2  ///< enable pull-up, default pull-down
 };
 /// Initialise the pulse counter and configure the event generation logic.
 /// Event is generated when pulse count hits multiple of Limit. Limit can be set
@@ -227,8 +228,8 @@ enum RFTestTxType {
 /// The antenna port should be connected to a load when testing.
 /// \p Frequency is in Hertz.
 /// \p TxType can be tone or pseudorandom binary sequence defined by
-/// #RFTestTxType. When testing in burst mode, the radio is on for 250ms and off
-/// for 1750ms. Otherwise the radio transmits continuously. Returns 0 if
+/// #RFTestTxType. When testing in burst mode, the radio is on for 260ms and off
+/// for 1740ms. Otherwise the radio transmits continuously. Returns 0 if
 /// succeeded and -1 if failed.
 int RFTestTxStart(uint32_t Frequency, uint8_t TxType, bool IsBurst);
 /// Stop the RF Tx test.

@@ -273,6 +273,13 @@ int myriota_random_bernoulli(double p) {
   return 0;
 }
 
+int myriota_random_geometric(double p) {
+  assert(p > 0.0);  // p == 0.0 will run forever
+  int i = 1;
+  while (!myriota_random_bernoulli(p)) i++;
+  return i;
+}
+
 // Generate a normally distributed random variable.
 // Uses the Box Muller method
 double myriota_random_normal() {

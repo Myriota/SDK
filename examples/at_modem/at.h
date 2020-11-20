@@ -36,7 +36,7 @@
 #define RF_RX_DEFAULT_FREQUENCY 400000000
 
 typedef void (*QueryHandlerFunc_t)(uint32_t);
-typedef void (*ControlHandlerFunc_t)(uint32_t, char *);
+typedef void (*ControlHandlerFunc_t)(uint32_t, const char *);
 
 typedef enum {
   SYS_STATE_INIT = 0,

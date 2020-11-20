@@ -229,6 +229,11 @@ static inline double myriota_random_uniform() {
 // That is, returns 1 with probability p and 0 with probabiliy 1-p
 int myriota_random_bernoulli(double p);
 
+// Generate a geometric observation with success probability p
+// That is, the number Bernoulli trials with probability p until a signal
+// success (i.e. 1).
+int myriota_random_geometric(double p);
+
 // Generate a normally distributed random variable.
 // Uses the Box Muller method
 double myriota_random_normal();

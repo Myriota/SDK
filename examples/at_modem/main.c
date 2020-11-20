@@ -16,6 +16,8 @@
 
 #include "at.h"
 
+#define MODEM_BUSY PIN_GPIO7  // High when a job is running
+
 static time_t ModemReceive() {
   char rx[UART_MAX_RX_SIZE] = {0};
   int len = ATReceive(rx, UART_MAX_RX_SIZE);
@@ -47,6 +49,8 @@ void AppInit() {
 }
 
 int BoardStart(void) {
+  GPIOSetModeOutput(MODEM_BUSY);
+  GPIOSetHigh(MODEM_BUSY);
   LedTurnOn();
   Delay(100);
   LedTurnOff();
@@ -58,3 +62,7 @@ int BoardStart(void) {
   }
   return 0;
 }
+
+void BoardSleepEnter(void) { GPIOSetLow(MODEM_BUSY); }
+
+void BoardSleepExit(void) { GPIOSetHigh(MODEM_BUSY); }

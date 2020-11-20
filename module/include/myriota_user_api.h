@@ -105,14 +105,17 @@ time_t MaxThroughput(unsigned MaxMessagesPerDay);
 /// consumed is MAX_MESSAGE_SIZE. Calling ScheduleMessage when the
 /// number of bytes returned by MessageBytesFree is less than MAX_MESSAGE_SIZE
 /// replaces an existing message in the queue. This may result in dropped
-/// messages. See also MessageBytesFree. Return value is deprecated.
+/// messages. See also MessageBytesFree. Returns >=0 when succeeded or <0 if
+/// failed.
 float ScheduleMessage(const uint8_t *Message, size_t MessageSize);
 /// Returns number of bytes remaining in internal queue, that is,
 /// the number of bytes that can be scheduled with ScheduleMessage.
 size_t MessageBytesFree(void);
-/// Save all scheduled messages before planned module reset.
+/// Save all messages in the message queue to module's persistent storage.
 /// Saved messages will be transmitted after reset.
 void SaveMessages(void);
+/// Clear all messages in the message queue.
+void MessageQueueClear(void);
 
 /// @}
 
@@ -124,7 +127,8 @@ void Delay(uint32_t mSec);
 /// Delay for a number of microseconds
 void MicroSecondDelay(uint32_t uSec);
 /// Put the system in lower power mode for \p Sec seconds.
-/// The current job won't be interrupted by other jobs while sleeping.
+/// The calling job won't be interrupted by other jobs except for events while
+/// sleeping.
 void Sleep(uint32_t Sec);
 
 /// @}
@@ -195,6 +199,18 @@ uint32_t TickGet(void);
 /// The size can be 0 to log only the error code
 /// Returns 0 if logging succeeds and -1 if logging fails.
 int LogAdd(uint8_t ErrorCode, const void *Buffer, uint8_t BufferSize);
+
+/// @}
+
+/// @defgroup Suspend_mode Suspend mode
+/// @{
+
+/// Change suspend mode state. Set true to enable and false to disable. Has no
+/// effect if the system is already in the same state.
+void SuspendModeEnable(bool Enable);
+
+/// Returns true if suspend mode is enabled and false if disabled.
+bool SuspendModeIsEnabled(void);
 
 /// @}
 

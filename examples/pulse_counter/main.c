@@ -26,9 +26,6 @@ static time_t RunsOnPulseCounterEvent() {
 }
 
 void AppInit() {
-  // De-assert the pin based on the actual circuit design
-  GPIOSetModeInput(PIN_PULSE0, GPIO_PULL_DOWN);
-
   // Initialise to generate event every 6 pulses
   if (PulseCounterInit(6, 0)) printf("Failed to initialise pulse counter\n");
 

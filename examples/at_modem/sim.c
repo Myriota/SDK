@@ -24,8 +24,11 @@ static uint8_t pin_state = GPIO_HIGH;  // Current pin state
 static uint8_t gnss_return = 0;        // 0-success, 1-fail
 
 void LedTurnOn(void) {}
-
 void LedTurnOff(void) {}
+
+int GPIOSetModeOutput(uint8_t PinNum) { return 0; }
+int GPIOSetHigh(uint8_t PinNum) { return 0; }
+int GPIOSetLow(uint8_t PinNum) { return 0; }
 
 void *UARTInit(UARTInterface UARTNum, uint32_t BaudRate, uint32_t Options) {
   return (void *)0xDEADBEEF;

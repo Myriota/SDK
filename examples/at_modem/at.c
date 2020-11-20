@@ -168,7 +168,14 @@ static void QueryLocationHandler(uint32_t CmdId) {
   DEBUG_INFO("Read location = %s\n", tx_para);
 }
 
-static void ControlSaveMsgHandler(uint32_t CmdId, char *Para) {
+static void QuerySuspendModeHandler(uint32_t CmdId) {
+  char tx_para[] = "0";
+  sprintf(tx_para, "%s", SuspendModeIsEnabled() ? "1" : "0");
+  ATRespond(AT_RESP_OK_START, Queries[CmdId], tx_para);
+  DEBUG_INFO("Suspend mode = %s\n", tx_para);
+}
+
+static void ControlSaveMsgHandler(uint32_t CmdId, const char *Para) {
   if (strlen(Para) == 0) {
     SaveMessages();
     ATRespond(AT_RESP_OK_START, Controls[CmdId], NULL);
@@ -193,7 +200,7 @@ __attribute__((weak)) time_t KeepRFAwake() {
   }
 }
 
-static void ControlTxStartHandler(uint32_t CmdId, char *Para) {
+static void ControlTxStartHandler(uint32_t CmdId, const char *Para) {
   uint32_t tx_freq;
   uint8_t tx_type;
   bool tx_burst;
@@ -262,7 +269,7 @@ static void ControlTxStartHandler(uint32_t CmdId, char *Para) {
   }
 }
 
-static void ControlTxStopHandler(uint32_t CmdId, char *Para) {
+static void ControlTxStopHandler(uint32_t CmdId, const char *Para) {
   if (strlen(Para) == 0) {
     ScheduleJob(KeepRFAwake, Never());
     RFTestTxStop();
@@ -274,7 +281,7 @@ static void ControlTxStopHandler(uint32_t CmdId, char *Para) {
   }
 }
 
-static void ControlGnssFixHandler(uint32_t CmdId, char *Para) {
+static void ControlGnssFixHandler(uint32_t CmdId, const char *Para) {
   if (strlen(Para) == 0) {
     ATRespond(AT_RESP_OK_START, Controls[CmdId], NULL);
     if (GNSSFix()) {
@@ -291,7 +298,7 @@ static void ControlGnssFixHandler(uint32_t CmdId, char *Para) {
   }
 }
 
-static void ControlRssiHandler(uint32_t CmdId, char *Para) {
+static void ControlRssiHandler(uint32_t CmdId, const char *Para) {
   int32_t rssi;
   char resp[] = "400000000";
   if (strlen(Para) == 0) {
@@ -311,7 +318,7 @@ static void ControlRssiHandler(uint32_t CmdId, char *Para) {
   }
 }
 
-static void ControlScheduleMsgHandler(uint32_t CmdId, char *Para) {
+static void ControlScheduleMsgHandler(uint32_t CmdId, const char *Para) {
   int msg_len = 0;
   char msg[AT_MAX_PARA_LEN / 2 + 1] = {0};
   msg_len = ASCIIToHex(msg, Para);
@@ -325,13 +332,42 @@ static void ControlScheduleMsgHandler(uint32_t CmdId, char *Para) {
     ATRespond(AT_ERROR_START, NULL, ErrorCodes[AT_ERROR_INVALID_PARAMETER]);
     DEBUG_ERROR("Invalid parameter\n");
   } else {
-    ScheduleMessage((uint8_t *)msg, msg_len);
-    ATRespond(AT_RESP_OK_START, Controls[CmdId], Para);
-    DEBUG_INFO("Scheduled message: ");
-    for (int i = 0; i < msg_len; i++) {
-      DEBUG_INFO("%02x", msg[i]);
+    if (ScheduleMessage((uint8_t *)msg, msg_len) >= 0) {
+      ATRespond(AT_RESP_OK_START, Controls[CmdId], Para);
+      DEBUG_INFO("Scheduled message: ");
+      for (int i = 0; i < msg_len; i++) {
+        DEBUG_INFO("%02x", msg[i]);
+      }
+      DEBUG_INFO("\n");
+    } else {
+      ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
     }
-    DEBUG_INFO("\n");
+  }
+}
+
+static void ControlSuspendMode(uint32_t CmdId, const char *Para) {
+  if (strlen(Para) == 0) {
+    ATRespond(AT_RESP_FAIL_START, Controls[CmdId], NULL);
+    DEBUG_ERROR("No parameter speficified, 0 to enter and 1 to exit\n");
+  } else {
+    int enter_mode = atoi(Para);
+    switch (enter_mode) {
+      case 1:
+        SuspendModeEnable(true);
+        DEBUG_INFO("Suspend mode enabled\n");
+        ATRespond(AT_RESP_OK_START, Controls[CmdId], Para);
+        break;
+      case 0:
+        SuspendModeEnable(false);
+        DEBUG_INFO("Suspend mode disabled\n");
+        ATRespond(AT_RESP_OK_START, Controls[CmdId], Para);
+        break;
+      default:
+        ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
+        DEBUG_INFO("Unknown parameter %d,0 to enter and 1 to exit\n",
+                   enter_mode);
+        break;
+    }
   }
 }
 
@@ -343,6 +379,7 @@ static const QueryHandler_t QueryHandlers[] = {
     {AT_QUERY_REG_CODE, &QueryRegCodeHandler},
     {AT_QUERY_TIME, &QueryTimeHandler},
     {AT_QUERY_LOCATION, &QueryLocationHandler},
+    {AT_QUERY_SUSPEND_MODE, &QuerySuspendModeHandler},
 };
 
 static const ControlHandler_t ControlHandlers[] = {
@@ -352,6 +389,7 @@ static const ControlHandler_t ControlHandlers[] = {
     {AT_CONTROL_GNSS_FIX, &ControlGnssFixHandler},
     {AT_CONTROL_RSSI, &ControlRssiHandler},
     {AT_CONTROL_SCHEDULE_MESSAGE, &ControlScheduleMsgHandler},
+    {AT_CONTROL_SUSPEND_MODE, &ControlSuspendMode},
 };
 
 static void *GetHandlder(const char *CmdStr, const char *Strs[],
@@ -389,7 +427,7 @@ static bool ProcessQuery(char *CmdStr) {
   return true;
 }
 
-static bool ProcessControl(char *CmdStr, char *Para) {
+static bool ProcessControl(char *CmdStr, const char *Para) {
   unsigned CmdId;
   void *Handler = GetHandlder(CmdStr, Controls, (CmdHandler_t *)ControlHandlers,
                               AT_CONTROL_NUM, &CmdId);
@@ -398,7 +436,7 @@ static bool ProcessControl(char *CmdStr, char *Para) {
   return true;
 }
 
-static int ATCmdProcess(char *Cmd, char *Para) {
+static int ATCmdProcess(char *Cmd, const char *Para) {
   bool ret_query, ret_control;
   if (memcmp(Para, AT_QUERY, strlen(AT_QUERY)) == 0) {
     ret_query = ProcessQuery(Cmd);

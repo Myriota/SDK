@@ -37,8 +37,12 @@ $(NETWORK_INFO):
 builtin:=$(shell mktemp)
 buildkey:=$(shell mktemp -u)
 
+SDK_VERSION?=$(shell cat $(ROOTDIR)/VERSION)
+
 $(buildkey):
-	@openssl rand 16 > $@
+	@printf "0: %08x" $$(date -d "1 week" +%s) | xxd -r - $@
+	@echo $(SDK_VERSION) | awk -F"." '{printf ("4: %02x%02x%02x", $$1,$$2,$$3)}' | xxd -r - $@
+	@openssl rand 9 >> $@
 	@cat /dev/zero | head -c16 >> $@
 	@printf "BuildKey: "; cat $@ | xxd -ps -c32
 

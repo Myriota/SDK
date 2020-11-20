@@ -40,9 +40,16 @@
 ///     - 1: get time only after location has been fixed or set
 ///     - unset: do system GNSS fix
 ///     .
-/// - DUMPTX
+/// - DUMPTX (Deprecated, do not use)
 ///     - 1: dump transmission information
 ///     - 0 or unset: don't dump
+///     .
+/// - SATTEST (supercede DUMPTX)
+///     - 1~255: Enable satellite communication test, including dumping
+///     transmission information and communication stats, and specify
+///     communication stats dumping interval in minute. The dumped data is
+///     logged using user logging code 255
+///     - 0 or unset: disabled
 ///     .
 /// .
 #define BOARD_ENV_LEN_MAX 50

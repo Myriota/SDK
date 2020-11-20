@@ -52,6 +52,9 @@
 #include "LIS3DH_defs.h"
 #include "myriota_user_api.h"
 
+#define SPI_BAUDRATE_DIVIDER 24  // Integer from 1 to 8000
+#define SPI_BAUDRATE (SPI_BAUDRATE_MAX / SPI_BAUDRATE_DIVIDER + 1)
+
 static int16_t x, y, z;
 
 #ifdef USING_I2C
@@ -101,8 +104,7 @@ static int ReadRegister8(uint8_t reg) {
   uint8_t rx[2];  // 1 byte to skip reg addr and 1 byte for data
   // Set bit 7 to read
   reg |= 0x80;
-  if (SPIInit(SPI_BAUDRATE_DEFAULT) == 0 &&
-      SPITransfer(&reg, rx, sizeof(rx)) == 0) {
+  if (SPIInit(SPI_BAUDRATE) == 0 && SPITransfer(&reg, rx, sizeof(rx)) == 0) {
     SPIDeinit();
     return rx[1];
   }
@@ -117,7 +119,7 @@ static int WriteRegister8(uint8_t reg, uint8_t value) {
   tx[0] = reg;
   tx[1] = value;
 
-  if (SPIInit(SPI_BAUDRATE_DEFAULT) == 0 && SPIWrite(tx, sizeof(tx)) == 0) {
+  if (SPIInit(SPI_BAUDRATE) == 0 && SPIWrite(tx, sizeof(tx)) == 0) {
     SPIDeinit();
   } else {
     return -1;
@@ -130,8 +132,7 @@ static int ReadSample(void) {
   uint8_t rx[1 + LIS3DH_SAMPLE_SIZE];  // 1 byte to skip reg addr and the rest
                                        // for sample data
   uint8_t reg = LIS3DH_REG_OUT_X_L | 0x80 | 0x40;
-  if (SPIInit(SPI_BAUDRATE_DEFAULT) == 0 &&
-      SPITransfer(&reg, rx, sizeof(rx)) == 0) {
+  if (SPIInit(SPI_BAUDRATE) == 0 && SPITransfer(&reg, rx, sizeof(rx)) == 0) {
     SPIDeinit();
     x = (rx[2] << 8) | rx[1];
     y = (rx[4] << 8) | rx[3];

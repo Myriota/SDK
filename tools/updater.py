@@ -18,9 +18,35 @@ from __future__ import print_function
 import sys
 import time
 import serial
+import serial.tools.list_ports
 import argparse
 import os
 from io import BytesIO
+import signal
+import sys
+
+
+def get_ports():
+    ports = set()
+    for port in serial.tools.list_ports.comports():
+        ports.add(port.device)
+    return ports
+
+
+def detect_port():
+    print(
+        "Please connect/reconnect the USB cable ",
+        end="",
+    )
+    sys.stdout.flush()
+    existing_ports = get_ports()
+    while len(get_ports().difference(existing_ports)) == 0:
+        existing_ports = get_ports()
+        time.sleep(0.5)
+        print(".", end="")
+        sys.stdout.flush()
+    print("")
+    return get_ports().difference(existing_ports).pop()
 
 
 def open_serial_port(portname, baudrate):
@@ -290,18 +316,32 @@ def get_version(ser):
             break
 
 
-ser = None
+def dump_debug_output(ser):
+    print("Dumping debug output\n")
+    while True:
+        out = ser.readline()
+        if len(out) != 0:
+            print(out.decode("utf-8"), end="")
+            sys.stdout.flush()
+
+
+def signal_handler(signal, frame):
+    if serial_port is not None:
+        serial_port.close()
+    sys.exit(0)
+
+
+serial_port = None
 FIRMWARE_START_ADDRESS = 0x4000
 
 
 def main():
+    global serial_port
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGPIPE, signal_handler)
 
     port_name = "None"
-
-    import serial.tools.list_ports
-
-    if serial.tools.list_ports.comports():
-        port_name = serial.tools.list_ports.comports()[0].device
 
     parser = argparse.ArgumentParser(
         description="Myriota device updater",
@@ -400,11 +440,36 @@ def main():
         default=115200,
         help="set the serial port BAUDRATE between 9600 and 921600",
     )
+
+    parser.add_argument(
+        "-d",
+        "--default-port",
+        dest="default_port_flag",
+        action="store_true",
+        default=False,
+        help="use default serial port",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--listen-port",
+        dest="listen_port_flag",
+        action="store_true",
+        default=False,
+        help="listen to serial port",
+    )
+
     args = parser.parse_args()
 
-    if args.portname == "None":
-        parser.error("Please specify the serial port.")
-    port_name = args.portname
+    if args.default_port_flag:
+        if serial.tools.list_ports.comports():
+            port_name = serial.tools.list_ports.comports()[0].device
+
+    if port_name == "None" and args.portname == "None":
+        port_name = detect_port()
+
+    if args.portname != "None":
+        port_name = args.portname
 
     if args.baud_rate:
         if int(args.baud_rate) < 9600:
@@ -424,17 +489,19 @@ def main():
     else:
         print("Using serial port", port_name, br)
         serial_port = open_serial_port(port_name, br)
-    capture_bootloader(serial_port)
 
     if args.get_id_flag:
+        capture_bootloader(serial_port)
         get_id(serial_port)
         sys.exit(0)
 
     if args.get_regcode_flag:
+        capture_bootloader(serial_port)
         get_regcode(serial_port)
         sys.exit(0)
 
     if args.get_version_flag:
+        capture_bootloader(serial_port)
         get_version(serial_port)
         sys.exit(0)
 
@@ -450,17 +517,16 @@ def main():
     if args.test_image_name:
         update_commands.append(["a%x" % FIRMWARE_START_ADDRESS, args.test_image_name])
 
-    if not update_commands:
-        parser.error("Please specify the files to program.")
+    if update_commands:
+        capture_bootloader(serial_port)
+        for d in update_commands:
+            if update_image(serial_port, d[0], d[1]):
+                print("done")
+            else:
+                serial_port.close()
+                sys.exit(1)
 
-    for d in update_commands:
-        if update_image(serial_port, d[0], d[1]):
-            print("done")
-        else:
-            serial_port.close()
-            sys.exit(1)
-
-    if not args.network_info_bin_name and not args.test_image_name:
+    if update_commands and not args.network_info_bin_name and not args.test_image_name:
         # Force to clear network info
         zero_stream = BytesIO(b"\0\0\0\0\0\0\0\0\0\0")
         if not update_stream(serial_port, "o", zero_stream):
@@ -470,6 +536,9 @@ def main():
     if args.start_flag:
         print("Starting the application")
         jump_to_app(serial_port)
+
+    if args.listen_port_flag:
+        dump_debug_output(serial_port)
 
     serial_port.close()
 
