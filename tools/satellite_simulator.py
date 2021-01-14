@@ -60,12 +60,12 @@ class SatelliteSimulator(object):
         self.chunk_duration = chunk_duration
         self.chunk_size = int(self.chunk_duration * self.down_rate * 4)
 
-        # tools convert_type and resampler assumed to reside in current folder
+        # tools convert_type and resample assumed to reside in current folder
         os.environ["PATH"] += os.pathsep + os.getcwd()
 
     def check_dongle(self):
         """
-        Check if rtl_sdr, convert_type and resampler tools are installed and
+        Check if rtl_sdr, convert_type and resample tools are installed and
         device available. No need to reimplement dongle search as rtl_sdr
         already does this. Returns True on success.
         """
@@ -75,9 +75,9 @@ class SatelliteSimulator(object):
             raise IOError(
                 "convert_type: command not found. Please check your installation."
             )
-        if find_executable("resampler") is None:
+        if find_executable("resample") is None:
             raise IOError(
-                "resampler: command not found. Please check your installation."
+                "resample: command not found. Please check your installation."
             )
         proc = subprocess.Popen(
             "rtl_sdr -n 1 - > /dev/null", shell=True, stderr=subprocess.PIPE
@@ -96,7 +96,7 @@ class SatelliteSimulator(object):
         cmd = [
             "rtl_sdr -f {frequency} -s {rate} -g {gain} -n {samples} -",
             "convert_type -f uint8",
-            "resampler -i {rate} -r {down_rate}",
+            "resample -i {rate} -r {down_rate}",
             "convert_type -t int16",
         ]
         cmd = " | ".join(cmd).format(

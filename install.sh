@@ -16,8 +16,13 @@
 sudo apt-get -y update
 
 # Myriota Development Board requirements
-sudo apt-get -y install make curl python-pip
-sudo -H pip install -r requirements.txt
+if $(cat /etc/os-release | grep -q "Ubuntu 20.04"); then
+    sudo apt-get -y install make curl python3 python3-pip python-is-python3
+    sudo -H pip3 install -r requirements.txt
+else
+    sudo apt-get -y install make curl python python-pip
+    sudo -H pip install -r requirements.txt
+fi
 curl -O https://static.myriota.com/gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2
 sudo mkdir -p /opt/gcc-arm
 sudo tar -xjvf gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2 -C /opt/gcc-arm --strip-components=1

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.1
+
+API changes:
+
+- Adds API I2CInitEx to support different bus speeds
+
+Fixes:
+
+- Fixes watchdog timeout issue when doing GNSS fix
+- Fixes sigpipe exception when running updater.py under Windows
+- Fixes user job run count in the log
+- Fixes an issue where API MicroSecondDelay does not handle 0 as input parameter properly
+
 ## 1.4.0
 
 API changes:
@@ -13,7 +26,7 @@ API changes:
 
 Improvements:
 
-- Adds suppend mode support
+- Adds suspend mode support
 - Adds an option to updater.py to dump device debug output
 - Reduces module downlink energy consumption
 - Improves updater.py and log-util.py to automatically detect the serial port to use

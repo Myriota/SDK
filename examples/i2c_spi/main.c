@@ -85,7 +85,7 @@ static int WriteRegister8(uint8_t reg, uint8_t value) {
 static int ReadSample(void) {
   uint8_t rx[LIS3DH_SAMPLE_SIZE];
   uint8_t reg = LIS3DH_REG_OUT_X_L | 0x80;
-  if (I2CInit() == 0) {
+  if (I2CInitEx(I2C_FAST_MODE) == 0) {
     I2CWrite(LIS3DH_I2C_ADDRESS, &reg, sizeof(reg));
     I2CRead(LIS3DH_I2C_ADDRESS, NULL, 0, rx, sizeof(rx));
     I2CDeinit();

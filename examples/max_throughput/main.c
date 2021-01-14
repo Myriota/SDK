@@ -26,7 +26,7 @@ typedef struct {
 static time_t Throughput(void) {
   static unsigned int sequence_number = 0;
 
-  const throughput_message message = {sequence_number, time(NULL)};
+  const throughput_message message = {sequence_number, TimeGet()};
 
   ScheduleMessage((void *)&message, sizeof(message));
 

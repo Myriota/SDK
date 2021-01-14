@@ -42,7 +42,7 @@ int ADCGetVoltage(uint8_t PinNum, ADCReference Reference, uint32_t *mV) {
 
 // Generate GPIO wakeup event
 time_t ScheduleHook(time_t Next) {
-  const time_t next_event = time(NULL) + 5;
+  const time_t next_event = TimeGet() + 5;
 
   // wakeup time is before the next, return 0 to indicate no event
   if (next_event >= Next) return 0;

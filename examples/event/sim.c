@@ -32,7 +32,7 @@ int GPIOSetModeInput(uint8_t PinNum, GPIOPull Pull) { return 0; }
 // Generate the GPIO wakeup event every hour
 time_t ScheduleHook(time_t Next) {
   // current time rounded up to the next hour
-  const time_t next_event = (time(NULL) / 3600 + 1) * 3600;
+  const time_t next_event = (TimeGet() / 3600 + 1) * 3600;
 
   // wakeup time is before the next hour return 0 to indicate no event
   if (next_event >= Next) return 0;

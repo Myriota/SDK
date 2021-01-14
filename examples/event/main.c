@@ -21,7 +21,7 @@
 const static uint8_t GPIOPin = PIN_GPIO0_WKUP;
 
 static time_t RunsOnGPIOWakeup() {
-  printf("Woken up by GPIO @ %d\n", (int)time(NULL));
+  printf("Woken up by GPIO @ %d\n", (int)TimeGet());
 
   printf("GPIO%u level is %s\n", (unsigned int)GPIOPin,
          ((GPIOGet(GPIOPin) == GPIO_HIGH) ? "high" : "low"));

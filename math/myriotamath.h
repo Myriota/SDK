@@ -93,8 +93,15 @@ double myriota_complex_abs(myriota_complex x);
 // Phase/argument/angle of a complex number
 double myriota_complex_arg(myriota_complex x);
 
+// real and imaginary parts
+double myriota_complex_real(myriota_complex x);
+double myriota_complex_imag(myriota_complex x);
+
 // Sinc function
 double myriota_sinc(double t);
+
+// Blackman window function of width 2W
+double myriota_blackman(double t, double W);
 
 // Hyperbolic sine function
 double myriota_sinh(double x);
@@ -400,6 +407,19 @@ void myriota_detect_sinusoid_inplace(myriota_complex *x, const unsigned int N,
 int myriota_sort_unique(void *base, size_t nitems, size_t size,
                         int (*compar)(const void *, const void *));
 
+/// Complex 16 bit fixed point type
+typedef struct {
+  int16_t re;
+  int16_t im;
+} myriota_complex_16;
+
+// Clip signed 32 bit integer into interval [-2^15, 2^15)
+static inline int16_t myriota_clip_16(const int32_t x) {
+  if (x > (1 << 15) - 1) return (1 << 15) - 1;
+  if (x < -(1 << 15)) return -(1 << 15);
+  return x;
+}
+
 #ifdef __cplusplus
 }
 
@@ -471,21 +491,23 @@ class CircularBuffer {
   uint64_t N;
 };
 
-// Upsample input sequence where in_rate <= out_rate
-class Upsampler {
+class Resampler {
  public:
   const double W;  // window width
   const myriota_rational r;
   const double gamma;
+  const double kappa;
+  const double delta;
+  const int xi;
   const int gmin;
   const int gmax;
   // Widow width W can be adjusted, larger is slower, but more accurate
-  Upsampler(double in_rate, double out_rate, double W = 30);
+  Resampler(double in_rate, double out_rate, double W = 30);
   void push(complex x) { a.push(x); };
   int64_t pushed() const { return a.pushed(); }
   complex operator()(int64_t n) const;
-  int64_t minn() const { return ceil(gamma * (a.maxn() - a.size + W)); }
-  int64_t maxn() const { return floor(gamma * (a.maxn() - 1 - W)); }
+  int64_t minn() const { return ceil(gamma * (a.maxn() - a.size) + delta * W); }
+  int64_t maxn() const { return floor(gamma * (a.maxn() - 1) - delta * W); }
 
  protected:
   CircularBuffer<complex> a;
@@ -493,26 +515,32 @@ class Upsampler {
   inline double g(int64_t n) const { return g_buf[n - gmin]; };
 };
 
-// Downsample input sequence where in_rate > out_rate
-class Downsampler {
+// Resample 16-bit fixed point input sequence
+class Resampler16 {
  public:
   const double W;  // window width
   const myriota_rational r;
   const double gamma;
+  const double kappa;
+  const double delta;
+  const int xi;
   const int gmin;
   const int gmax;
+  const int32_t alpha;
   // Widow width W can be adjusted, larger is slower, but more accurate
-  Downsampler(double in_rate, double out_rate, double W = 30);
-  void push(complex x) { a.push(x); };
+  Resampler16(double in_rate, double out_rate, double W = 30);
+  void push(myriota_complex_16 x) { a.push(x); };
   int64_t pushed() const { return a.pushed(); }
-  complex operator()(int64_t n) const;
-  int64_t minn() const { return ceil(gamma * (a.maxn() - a.size) + W); }
-  int64_t maxn() const { return floor(gamma * (a.maxn() - 1) - W); }
+  myriota_complex_16 operator()(int64_t n) const;
+  int64_t minn() const { return ceil(gamma * (a.maxn() - a.size) + delta * W); }
+  int64_t maxn() const { return floor(gamma * (a.maxn() - 1) - delta * W); }
+  double beta() const;        // fixed point scaling paramter
+  double g(int64_t n) const;  // double precision filter
 
  protected:
-  CircularBuffer<complex> a;
-  std::vector<double> g_buf;
-  inline double g(int64_t n) const { return g_buf[n - gmin]; };
+  CircularBuffer<myriota_complex_16> a;
+  std::vector<int32_t> f_buf;
+  inline int32_t f(int64_t n) const { return f_buf[n - gmin]; };
 };
 
 // Returns int x modulo int y, i.e., the coset representative from

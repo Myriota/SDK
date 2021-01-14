@@ -339,8 +339,10 @@ def main():
     global serial_port
 
     signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGPIPE, signal_handler)
-
+    try:
+        signal.signal(signal.SIGPIPE, signal_handler)
+    except AttributeError:
+        pass
     port_name = "None"
 
     parser = argparse.ArgumentParser(

@@ -24,7 +24,8 @@ static int16_t x = -3, y = 4, z = 16384;
 #endif
 
 static uint8_t LastCommand = UINT8_MAX;
-int I2CInit(void) { return 0; }
+int I2CInit() { return 0; }
+int I2CInitEx(uint32_t Option) { return 0; }
 void I2CDeinit(void) {}
 int I2CWrite(uint16_t DeviceAddress, const uint8_t *Command,
              size_t CommandLength) {

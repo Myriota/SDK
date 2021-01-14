@@ -21,30 +21,29 @@
 using namespace myriota;
 
 // Read complex sample from file
-int read_sample(FILE *infile, myriota::complex &sample) {
-  double buf[2];
-  if (fread(buf, sizeof(double), 2, infile) < 2) return -1;
-  sample = myriota::complex(buf[0], buf[1]);
+template <class C>
+int read_sample(FILE *infile, C *sample) {
+  if (fread(sample, sizeof(C), 1, infile) < 1) return -1;
   return 0;
 }
 
 // write complex sample to stdout
-void write_sample(const myriota::complex &sample) {
-  const double buf[2] = {std::real(sample), std::imag(sample)};
-  if (fwrite(buf, sizeof(double), 2, stdout) == 2) return;
+template <class C>
+void write_sample(const C sample) {
+  if (fwrite(&sample, sizeof(C), 1, stdout) == 1) return;
   fprintf(stderr, "resampler failed to write sample\n");
   exit(EXIT_FAILURE);
 }
 
-template <class R>
+template <class R, class C>
 void resample(FILE *infile, R &r) {
   for (int64_t n = 0; n >= 0; n++) {
     while (r.maxn() < n) {
-      complex x;
-      if (read_sample(infile, x)) return;
+      C x;
+      if (read_sample<C>(infile, &x)) return;
       r.push(x);
     }
-    write_sample(r(n));
+    write_sample<C>(r(n));
   }
 }
 
@@ -55,9 +54,14 @@ int main(int argc, char **argv) {
   cmd_parser.add<double>("output_rate", 'r', "output sample rate", true);
   cmd_parser.add<double>("window_width", 'W',
                          "larger is slower, but more accurate", false, 30);
+  cmd_parser.add(
+      "int16", '\0',
+      "16-bit fixed point implementation, int16 input, int16 output.");
   cmd_parser.set_description(
-      "Resamples double precision complex samples from input rate to output\n"
-      "rate. Input samples via stdin, output samples are written to stdout.\n");
+      "Resamples complex samples from input rate to output rate. Input samples "
+      "via stdin, output samples are written to stdout. By default the input "
+      "samples are expected to be in double precision floating point "
+      "format.\n");
 
   cmd_parser.parse_check(argc, argv);
 
@@ -66,12 +70,12 @@ int main(int argc, char **argv) {
   const double W = cmd_parser.get<double>("window_width");
 
   /// Upsampler or downsampler as required
-  if (in_rate <= out_rate) {
-    Upsampler r = Upsampler(in_rate, out_rate, W);
-    resample(stdin, r);
-  } else {
-    Downsampler r = Downsampler(in_rate, out_rate, W);
-    resample(stdin, r);
+  if (cmd_parser.exist("int16")) {
+    Resampler16 r = Resampler16(in_rate, out_rate, W);
+    resample<Resampler16, myriota_complex_16>(stdin, r);
+  } else {  // double format by default
+    Resampler r = Resampler(in_rate, out_rate, W);
+    resample<Resampler, complex>(stdin, r);
   }
 
   return EXIT_SUCCESS;

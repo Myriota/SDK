@@ -17,15 +17,15 @@ static int led_state = 0;
 
 void LedTurnOn(void) {
   led_state = 1;
-  printf("%ld %s Led=%d\n", time(NULL), __func__, led_state);
+  printf("%ld %s Led=%d\n", TimeGet(), __func__, led_state);
 }
 
 void LedTurnOff(void) {
   led_state = 0;
-  printf("%ld %s Led=%d\n", time(NULL), __func__, led_state);
+  printf("%ld %s Led=%d\n", TimeGet(), __func__, led_state);
 }
 
 void LedToggle(void) {
   led_state = led_state ? 0 : 1;
-  printf("%ld %s Led=%d\n", time(NULL), __func__, led_state);
+  printf("%ld %s Led=%d\n", TimeGet(), __func__, led_state);
 }

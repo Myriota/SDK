@@ -102,7 +102,7 @@ contents = {
         "RX attempt",
         "RX success",
         "RX unverified",
-        "TX attmepts",
+        "TX attempt",
     ],
 }
 
@@ -176,6 +176,9 @@ def decode_log(logfile):
         is_empty = True
         while True:
             bytes = binary_file.read(8)
+            if len(bytes) == 0:
+                is_empty = False
+                return is_empty
             if len(bytes) < 8:
                 if not is_empty:
                     print("Incomplete log entry")
@@ -339,6 +342,10 @@ def main():
     global serial_port
 
     signal.signal(signal.SIGINT, signal_handler)
+    try:
+        signal.signal(signal.SIGPIPE, signal_handler)
+    except AttributeError:
+        pass
 
     infile = ""
     outfile = ""

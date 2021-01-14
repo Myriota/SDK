@@ -133,12 +133,21 @@ double myriota_complex_norm(myriota_complex x) {
 }
 
 double myriota_complex_abs(myriota_complex x) { return cabs(x); }
-
 double myriota_complex_arg(myriota_complex x) { return carg(x); }
+double myriota_complex_real(myriota_complex x) { return creal(x); }
+double myriota_complex_imag(myriota_complex x) { return cimag(x); }
 
 double myriota_sinc(double t) {
   if (fabs(t) < 5e-3) return 1.0 - t * t * (1.0 / 6 - 1.0 / 120 * t * t);
   return sin(pi * t) / (pi * t);
+}
+
+double myriota_blackman(double t, double W) {
+  if (t < -W || t > W) return 0.0;
+  const double a0 = 21.0 / 50;
+  const double a1 = 1.0 / 2;
+  const double a2 = 2.0 / 25;
+  return a0 + a1 * cos(pi * t / W) + a2 * cos(2 * pi * t / W);
 }
 
 double myriota_sinh(double x) { return (1 - exp(-2 * x)) / (2 * exp(-x)); }

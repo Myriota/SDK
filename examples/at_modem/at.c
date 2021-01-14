@@ -154,7 +154,7 @@ static void QueryRegCodeHandler(uint32_t CmdId) {
 
 static void QueryTimeHandler(uint32_t CmdId) {
   char tx_para[] = "1483228800";
-  sprintf(tx_para, "%i", (int)time(NULL));
+  sprintf(tx_para, "%i", (int)TimeGet());
   ATRespond(AT_RESP_OK_START, Queries[CmdId], tx_para);
   DEBUG_INFO("Read time = %s\n", tx_para);
 }

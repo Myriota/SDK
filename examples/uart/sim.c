@@ -44,7 +44,7 @@ int UARTRead(void *Handle, uint8_t *Rx, size_t Length) {
 
 // Wake modem every 8 hours and schedule a message
 time_t ScheduleHook(time_t Next) {
-  const time_t next_event = (time(NULL) / EIGHT_HOURS + 1) * EIGHT_HOURS;
+  const time_t next_event = (TimeGet() / EIGHT_HOURS + 1) * EIGHT_HOURS;
 
   if (next_event >= Next) return 0;  // zero to indicate no event
 

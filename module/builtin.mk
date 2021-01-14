@@ -40,7 +40,7 @@ buildkey:=$(shell mktemp -u)
 SDK_VERSION?=$(shell cat $(ROOTDIR)/VERSION)
 
 $(buildkey):
-	@printf "0: %08x" $$(date -d "1 week" +%s) | xxd -r - $@
+	@printf "0: %08x" $$(date +%s) | xxd -r - $@
 	@echo $(SDK_VERSION) | awk -F"." '{printf ("4: %02x%02x%02x", $$1,$$2,$$3)}' | xxd -r - $@
 	@openssl rand 9 >> $@
 	@cat /dev/zero | head -c16 >> $@

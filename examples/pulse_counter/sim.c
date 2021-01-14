@@ -49,7 +49,7 @@ time_t ScheduleHook(time_t Next) {
   time_t WakeupInterval = 3600;
 
   // current time rounded up to the next hour
-  const time_t next_event = (time(NULL) / WakeupInterval + 1) * WakeupInterval;
+  const time_t next_event = (TimeGet() / WakeupInterval + 1) * WakeupInterval;
 
   // wakeup time is before the next hour return 0 to indicate no event
   if (next_event >= Next) return 0;

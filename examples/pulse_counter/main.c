@@ -17,7 +17,7 @@
 #include "myriota_user_api.h"
 
 static time_t RunsOnPulseCounterEvent() {
-  printf("Woken up by Pulse Counter @ %d\n", (int)time(NULL));
+  printf("Woken up by Pulse Counter @ %d\n", (int)TimeGet());
 
   printf("Current pulse counter value: %" PRIu32 "\n",
          (uint32_t)PulseCounterGet());

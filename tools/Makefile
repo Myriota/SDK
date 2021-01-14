@@ -19,14 +19,14 @@ ASMEXT := s
 include $(ROOTDIR)/math/flags.mk
 
 ## Build tools for the satellite simulator dongle
-satellite_simulator: resampler convert_type
+satellite_simulator: resample convert_type
 
 ## Type conversion for a sequence, e.g. int8 to double
 convert_type: convert_type.o myriotamath.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 ## Changes rate of a complex valued sequence
-resampler: resampler.o myriotamath.a
+resample: resample.o myriotamath.a
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 include $(ROOTDIR)/math/build.mk

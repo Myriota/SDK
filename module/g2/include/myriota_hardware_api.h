@@ -93,9 +93,17 @@ int ADCGetValue(uint8_t PinNum, ADCReference Reference, uint16_t *Value);
 /// @defgroup I2C_master I2C master
 /// @{
 
+/// I2C options, can be ORed
+enum I2COption {
+  I2C_DEFAULT_OPTIONS = 0,
+  I2C_FAST_MODE = 1 << 0,  ///< ~400 kbit/s, default standard mode (~100 kbit/s)
+};
 /// Initialise I2C bus.
 /// Returns 0 if initialisation succeeds and -1 if initialisation fails.
 int I2CInit(void);
+/// Initialise I2C bus with options.
+/// Returns 0 if initialisation succeeds and -1 if initialisation fails.
+int I2CInitEx(uint32_t Option);
 /// Deinitialise I2C bus.
 void I2CDeinit(void);
 /// Write to an I2C device synchronously.
@@ -196,6 +204,7 @@ int UARTRead(void *Handle, uint8_t *Rx, size_t Length);
 
 /// Pulse counter bit-wise options, can be ORed
 enum PulseCounterOption {
+  PCNT_DEFAULT_OPTIONS = 0,
   PCNT_EDGE_FALLING = 1 << 0,  ///< count on falling edge, default rising edge
   PCNT_DEBOUNCE_DISABLE =
       1 << 1,  ///< disable hardware debouncing, default enabled for about 160us
