@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2020-2021, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -16,7 +16,7 @@ PROGRAM_NAME = at_modem
 
 ROOTDIR ?= $(abspath ../..)
 
-APP_SRC = main.c at.c
+APP_SRC = main.c at.c hardware_test.c
 
 ifeq (sim, $(notdir $(MODULE)))
 	APP_SRC += sim.c

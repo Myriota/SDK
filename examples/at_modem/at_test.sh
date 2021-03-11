@@ -24,7 +24,7 @@ proc abort { } { send_user "Timeout!\r\n" }
 expect_before timeout abort
 
 # wait a bit longer for the first returns
-set timeout 15
+set timeout 20
 expect "+STATE=INITIALIZING"
 expect "+STATE=READY"
 set timeout 3

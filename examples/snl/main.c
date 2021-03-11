@@ -24,6 +24,8 @@
 const static uint8_t ButtonGPIO = PIN_GPIO0_WKUP;
 const static uint8_t VibrationGPIO = PIN_GPIO1_WKUP;
 
+#define VIBRATION_SENSOR_ENABLED false  // true to enable vibration sensor
+
 // Format of the messages to be transmitted. Values are little endian
 typedef struct {
   uint16_t sequence_number;
@@ -39,8 +41,8 @@ enum {
   GPIO_4_20_ENABLE = PIN_PULSE0,
   // ADC instance sensing 4-20mA circuit
   ADC_PRESSURE_SENSOR = PIN_ADC0,
-  // Delay to allow 21V power supply to stablise
-  DELAY_MS_21V_STABILISE = 700,
+  // Modify this delay to save power based on sensor stabilisation time
+  DELAY_MS_21V_STABILISE = 1500,
   // Message sending period
   MESSAGE_PERIOD_HOURS = 8
 };
@@ -100,7 +102,7 @@ static time_t RunsOnGPIOWakeup() {
     printf("Woken up by button at %u\n", (unsigned int)TimeGet());
   }
 
-  if (GPIOGet(VibrationGPIO) == GPIO_LOW) {
+  if (VIBRATION_SENSOR_ENABLED && GPIOGet(VibrationGPIO) == GPIO_LOW) {
     printf("Woken up by vibration sensor at %u\n", (unsigned int)TimeGet());
   }
 
@@ -108,8 +110,10 @@ static time_t RunsOnGPIOWakeup() {
 }
 
 void AppInit() {
-  GPIOSetModeInput(VibrationGPIO, GPIO_NO_PULL);
-  GPIOSetWakeupLevel(VibrationGPIO, GPIO_LOW);
+  if (VIBRATION_SENSOR_ENABLED) {
+    GPIOSetModeInput(VibrationGPIO, GPIO_NO_PULL);
+    GPIOSetWakeupLevel(VibrationGPIO, GPIO_LOW);
+  }
 
   GPIOSetModeInput(ButtonGPIO, GPIO_PULL_DOWN);
   GPIOSetWakeupLevel(ButtonGPIO, GPIO_HIGH);
@@ -123,7 +127,6 @@ int BoardStart(void) {
   GPIOSetModeOutput(GPIO_4_20_ENABLE);
   GPIOSetLow(GPIO_4_20_ENABLE);
 
-  // Blink once after application starts
   LedTurnOn();
   Delay(LED_DELAY);
   LedTurnOff();

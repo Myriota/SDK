@@ -28,11 +28,11 @@
 
 ### Power up
 
-- Modem sends `+STATE=INITIALIZING` when system is initializing
-- Modem sends `+STATE=GNSS_ACQ` if system failed to get initial GNSS fix acquisition and starts continual retrying automatically
-- Modem sends `+STATE=READY` if system has acquired GNSS fix
-- The state changes to READY once GNSS fix has acquired which can be queried by `STATE` command
-- Only in READY state can a scheduled message be transmitted
+- Modem sends `+STATE=INITIALIZING` when the system is initializing
+- Modem sends `+STATE=GNSS_ACQ` if the system failed to get initial GNSS fix acquisition and starts continual retrying automatically
+- Modem sends `+STATE=READY` if the system has acquired a GNSS fix
+- The state changes to READY once a GNSS fix has acquired which can be queried by the `STATE` command
+- Only in the READY state can a scheduled message be transmitted
 
 ### Communication check
 
@@ -116,8 +116,8 @@ E.g. AT+TXSTART=161450000,0,1,60
 | MESSAGE_TOO_LONG   | Scheduled message is over 20 bytes | Reduce message size |
 | BUFFER_OVERFLOW    | Modem RX buffer overflow | Reduce UART frame length |
 | UNKNOWN_QUERY_CMD | Query identifier "=?" detected but no command match | Check query command list |
-| UNKNOWN_CONTROL_CMD | Control format matched but command is not found | Check control command list |
-| INVALID_COMMAND    | Command format error, can be cause by prefix/terminator match or command/parameter too long | Check command format or monitor debug port for detail reason |
+| UNKNOWN_CONTROL_CMD | Control format matched but no command is found | Check control command list |
+| INVALID_COMMAND    | Command format error, can be caused by prefix/terminator match or command/parameter too long | Check command format or monitor debug port for detail reason |
 
 ### Timeout and retry
 
@@ -135,7 +135,7 @@ User protocol and commands can be added to the modem example.
 
 1. Add/remove a command label in the relevant query/control command enumeration in `at_defs.h`. It should be before the element ends with NUM.
 
-2. Define/remove the command string in the relevant const array in `at_defs.h`. The order of the elements in the array must be the same with the correspondent enumeration.
+2. Define/remove the command string in the relevant const array in `at_defs.h`. The order of the elements in the array must be the same as the correspondent enumeration.
 
 3. Declare/remove the command handling function in `at.c`.
 
@@ -145,25 +145,25 @@ User protocol and commands can be added to the modem example.
 
 1. Add/remove an error code label in the error code enumeration in `at_defs.h`.
 
-2. Define/remove the error code string In ErrorCodes[] array in `at_defs.h`. The order should be the same with the enumeration.
+2. Define/remove the error code string In ErrorCodes[] array in `at_defs.h`. The order should be the same as the enumeration.
 
-3. Use ATRespond function to return error code to host.
+3. Use the `ATRespond` function to return an error code to the host.
 
-## Modem command test
+## Modem protocol test
 
 `at_test.sh` can be used to verify the AT command set of the modem example. Host simulator test and real hardware test can be issued.
 
 ### Dependencies
 
 - Development environment setup following [developer.myriota.com](https://developer.myriota.com)
-- Simulation library which can be downloaded by running `./get_sim_lib.sh` command under SDK root directory
+- Simulation library which can be downloaded by running the `./get_sim_lib.sh` command under the SDK root directory
 - The testing tool `expect`: run `sudo apt install expect` if not installed
 
 ### Host simulator test
 
-This mode can be used to quickly verify AT command protocol. "Timeout!" will be printed for each failure of command test.
+This mode can be used to quickly verify AT command protocol. "Timeout!" will be printed for each failure of a command test.
 
-1. Build the modem example application in host simulator mode.
+1. Build the modem example application in the host simulator mode.
 
 `make clean; MODULE=g2/sim make`
 
@@ -171,7 +171,7 @@ This mode can be used to quickly verify AT command protocol. "Timeout!" will be 
 
 `mkdir -p obj; >obj/debug.log >obj/modem.log; ./at_test.sh "./at_modem 1>obj/debug.log" obj/modem.log`
 
-Two log files will be generated in `obj` folder.
+Two log files will be generated in the `obj` folder.
 
 ### Real hardware test in Lab Mode
 
@@ -192,3 +192,29 @@ GNSS fix will be skipped in this mode.
 `./at_test.sh <PORT>`
 
 `<PORT>` is the AT communication port. E.g. `./at_test.sh /dev/ttyUSB1`
+
+## Modem hardware testing example
+
+The application also shows how to run multiple hardware tests quickly without waiting for the modem to enter the READY state. By sending the string "test" to the modem 5 seconds after power-up, the application enters hardware test mode. The application waits for 3 seconds to detect the string before running into normal mode. The following items will be tested:
+
+### GNSS
+
+There are two options for this test:
+
+1. GNSS hardware sanity test only
+
+Default option. The test passes if the modem successfully receives a certain number of NMEA sentences from the GNSS hardware.
+
+2. Full test
+
+This can be done by setting `GNSS_COMM_TEST_ONLY` to `false` in `hardware_test.c`. The test passes if the modem can successfully acquire a GNSS fix.
+
+### Radio TX
+
+This test can be used to do TX power, TX current draw and TX/RX path connectivity checks. More information can be found in the [readme file](https://github.com/Myriota/SDK/blob/master/examples/rf_test/tx/README) of RF TX test example.
+
+### Radio RX
+
+This test can be used to check the RX path. More information can be found in the [readme file](https://github.com/Myriota/SDK/blob/master/examples/rf_test/rx/README) of RF RX test example.
+
+Test results are output to both modem communication interface and serial debug interface.

@@ -26,13 +26,8 @@
 #define DEBUG_ERROR(Format...)
 #endif
 
-#define UART_INTERFACE LEUART
-#define UART_BAUDRATE 9600
-
-#define MODULE_BAND_PIN PIN_BAND
-
-static void *uart_handle = NULL;
-static unsigned state = AT_STATE_INIT;
+static void *UartHandle = NULL;
+static unsigned State = AT_STATE_INIT;
 
 static int ASCIIToHex(char *Dest, const char *Src) {
   int char_cnt = 0;
@@ -59,20 +54,20 @@ static int ASCIIToHex(char *Dest, const char *Src) {
 }
 
 int ATInit() {
-  uart_handle = UARTInit(UART_INTERFACE, UART_BAUDRATE, 0);
-  if (uart_handle == NULL) {
+  UartHandle = UARTInit(UART_INTERFACE, UART_BAUDRATE, 0);
+  if (UartHandle == NULL) {
     DEBUG_ERROR("Failed to initialise uart\n");
     return -1;
   }
   return 0;
 }
 
-int ATReceive(char *Rx, size_t MaxLength) {
+size_t ATReceive(char *Rx, size_t MaxLength) {
   const uint32_t start = TickGet();
   size_t count = 0;
   while ((TickGet() - start < RECEIVE_TIMEOUT) && (count <= MaxLength)) {
     uint8_t ch;
-    if (UARTRead(uart_handle, &ch, 1) == 1) {
+    if (UARTRead(UartHandle, &ch, 1) == 1) {
       if (count < MaxLength) {
         Rx[count++] = ch;
       }
@@ -95,28 +90,30 @@ static int ATRespond(const char *Header, const char *Command,
     strcat(Tx, Parameter);
   }
   strcat(Tx, AT_RESP_END);
-  UARTWrite(uart_handle, (uint8_t *)Tx, strlen(Tx));
+  ATSend(Tx);
   return 0;
 }
+
+void ATSend(char *Tx) { UARTWrite(UartHandle, (uint8_t *)Tx, strlen(Tx)); }
 
 void ATSetState(SysStates State) {
   switch (State) {
     case SYS_STATE_INIT:
-      state = AT_STATE_INIT;
+      State = AT_STATE_INIT;
       break;
     case SYS_STATE_GNSS_ACQ:
-      state = AT_STATE_GNSS_ACQ;
+      State = AT_STATE_GNSS_ACQ;
       break;
     case SYS_STATE_READY:
-      state = AT_STATE_READY;
+      State = AT_STATE_READY;
       break;
   }
-  ATRespond(AT_STATE_START, NULL, States[state]);
+  ATRespond(AT_STATE_START, NULL, States[State]);
 }
 
 static SysStates ATGetState() {
-  if (HasValidGNSSFix()) state = AT_STATE_READY;
-  return state;
+  if (HasValidGNSSFix()) State = AT_STATE_READY;
+  return State;
 }
 
 static void QueryMsgQueueHandler(uint32_t CmdId) {

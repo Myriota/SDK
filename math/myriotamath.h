@@ -386,22 +386,6 @@ void myriota_fft(const unsigned int N, const myriota_complex *in,
 void myriota_inverse_fft(const unsigned int N, const myriota_complex *in,
                          myriota_complex *out);
 
-// Detect sinusoid in given signal x of length N.
-//
-// Returns estimates of sinusoids frequency on the interval [-0.5, 0.5),
-// complex amplitude,  and a confidence that the signals does indeed contain
-// this sinusoid.  The confidence is returned as a probability. Values
-// near 1 suggesting the precesence of a sinsoid.
-//
-// This implementation operates inplace on the input x. x will be mutated.
-// N need not be a power of 2 but x must be zero padded to the lengh a power of
-// two greater than N, i.e., to length myriota_greater_power_of_two(N)
-void myriota_detect_sinusoid_inplace(myriota_complex *x, const unsigned int N,
-                                     double *frequency,
-                                     myriota_complex *amplitude,
-                                     double *residual_variance,
-                                     double *confidence);
-
 // Like the standard qsort but also removes duplicates. Returns the number of
 // unique elements.
 int myriota_sort_unique(void *base, size_t nitems, size_t size,

@@ -16,13 +16,15 @@
 
 #include "at.h"
 
-#define MODEM_BUSY PIN_GPIO7  // High when a job is running
+#define LED_DELAY 100               // ms
+#define WAIT_FOR_TEST_TIMEOUT 3000  // ms
+
+static char RX[UART_MAX_RX_SIZE] = {0};
 
 static time_t ModemReceive() {
-  char rx[UART_MAX_RX_SIZE] = {0};
-  int len = ATReceive(rx, UART_MAX_RX_SIZE);
+  int len = ATReceive(RX, UART_MAX_RX_SIZE);
   if (len > 0) {
-    ATProcess(rx, len);
+    ATProcess(RX, len);
   } else {
     printf("No data received\n");
   }
@@ -38,7 +40,7 @@ static time_t UARTReady() {
     printf("State = GNSS_ACQ\n");
   }
   LedTurnOn();
-  Delay(100);
+  Delay(LED_DELAY);
   LedTurnOff();
   return Never();
 }
@@ -51,14 +53,14 @@ void AppInit() {
 int BoardStart(void) {
   GPIOSetModeOutput(MODEM_BUSY);
   GPIOSetHigh(MODEM_BUSY);
-  LedTurnOn();
-  Delay(100);
-  LedTurnOff();
   if (ATInit())
-    printf("Failed init modem\n");
+    printf("Failed to init modem\n");
   else {
     ATSetState(SYS_STATE_INIT);
     printf("Myriota modem example\n");
+    LedTurnOn();
+    if (IsTestMode(WAIT_FOR_TEST_TIMEOUT)) HardwareTest();
+    LedTurnOff();
   }
   return 0;
 }

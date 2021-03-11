@@ -26,6 +26,16 @@
 #define NUM_ELEMS(array) (sizeof(array) / sizeof((array)[0]))
 #endif
 
+#define MODEM_TEST_STR "test"
+
+#define MODEM_BUSY PIN_GPIO7  // Outputs high when a job is running
+
+#define MODULE_BAND_PIN PIN_BAND
+
+#define TICK_PER_SECOND 1000
+
+#define UART_INTERFACE LEUART
+#define UART_BAUDRATE 9600
 #define UART_MAX_TX_SIZE 60
 #define UART_MAX_RX_SIZE 80
 #define RECEIVE_TIMEOUT 200  // [ms]
@@ -33,7 +43,7 @@
 #define RF_TX_TIMEOUT_MAX 999000  // [ms]
 #define VHF_TX_DEFAULT_FREQUENCY 161450000
 #define UHF_TX_DEFAULT_FREQUENCY 400000000
-#define RF_RX_DEFAULT_FREQUENCY 400000000
+#define UHF_RX_DEFAULT_FREQUENCY 400500000
 
 typedef void (*QueryHandlerFunc_t)(uint32_t);
 typedef void (*ControlHandlerFunc_t)(uint32_t, const char *);
@@ -64,10 +74,16 @@ void ATSetState(SysStates St);
 
 int ATInit();
 
-int ATReceive(char *Rx, size_t MaxLength);
+size_t ATReceive(char *Rx, size_t MaxLength);
+
+void ATSend(char *Tx);
 
 void ATProcess(char *Start, int Len);
 
 time_t KeepRFAwake();
+
+bool IsTestMode(uint32_t);
+
+void HardwareTest();
 
 #endif

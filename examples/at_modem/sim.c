@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2020-2021, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -12,7 +12,7 @@
 // limitations under the License.
 
 // The simulation code for the at_modem example. This is only included when
-// building the application for the simulator platform.
+// building the application for the host simulator.
 
 #include <fcntl.h>
 #include <signal.h>
@@ -20,11 +20,13 @@
 #include <unistd.h>
 #include "at.h"
 
-static uint8_t pin_state = GPIO_HIGH;  // Current pin state
-static uint8_t gnss_return = 0;        // 0-success, 1-fail
+static uint8_t gnss_return = 0;  // 0-success, 1-fail
+
+time_t KeepRFAwake() { return Never(); }
 
 void LedTurnOn(void) {}
 void LedTurnOff(void) {}
+void LedToggle(void) {}
 
 int GPIOSetModeOutput(uint8_t PinNum) { return 0; }
 int GPIOSetHigh(uint8_t PinNum) { return 0; }
@@ -47,24 +49,19 @@ int UARTRead(void *Handle, uint8_t *Rx, size_t Length) {
   return read(STDIN_FILENO, Rx, Length);
 }
 
-size_t MessageBytesFree(void) { return 320; }
-
 int RFTestRxRSSI(int32_t *RSSI) {
   *RSSI = -90;
   return 0;
 }
 
-time_t KeepRFAwake() { return Never(); }
-
-char *ModuleIDGet(void) { return "00749f046b M1-23"; }
+char *ModuleIDGet(void) { return "00749f046b M1-24"; }
 
 char *RegistrationCodeGet(void) { return "g3z59x4e9frdt1j4ydmnb6jqy"; }
 
-void SaveMessages(void) {}
-
 int GPIOSetModeInput(uint8_t PinNum, GPIOPull Pull) { return 0; }
 
-int GPIOGet(uint8_t PinNum) { return pin_state; }
+#define GPIO_DONT_CARE GPIO_LOW
+int GPIOGet(uint8_t PinNum) { return GPIO_DONT_CARE; }
 
 int RFTestTxStart(uint32_t Frequency, uint8_t TxType, bool IsBurst) {
   if (Frequency < 142000000 || Frequency > 525000000 ||

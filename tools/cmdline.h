@@ -289,6 +289,43 @@ oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8, T a9,
   return ret;
 }
 
+template <class T>
+oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8, T a9,
+                      T a10, T a11) {
+  oneof_reader<T> ret;
+  ret.add(a1);
+  ret.add(a2);
+  ret.add(a3);
+  ret.add(a4);
+  ret.add(a5);
+  ret.add(a6);
+  ret.add(a7);
+  ret.add(a8);
+  ret.add(a9);
+  ret.add(a10);
+  ret.add(a11);
+  return ret;
+}
+
+template <class T>
+oneof_reader<T> oneof(T a1, T a2, T a3, T a4, T a5, T a6, T a7, T a8, T a9,
+                      T a10, T a11, T a12) {
+  oneof_reader<T> ret;
+  ret.add(a1);
+  ret.add(a2);
+  ret.add(a3);
+  ret.add(a4);
+  ret.add(a5);
+  ret.add(a6);
+  ret.add(a7);
+  ret.add(a8);
+  ret.add(a9);
+  ret.add(a10);
+  ret.add(a11);
+  ret.add(a12);
+  return ret;
+}
+
 //-----
 
 class parser {

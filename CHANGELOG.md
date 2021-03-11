@@ -1,10 +1,31 @@
 # Changelog
 
+## 1.5.0
+
+API changes:
+
+- Returns error from `ScheduleMessage` if a message of zero length is scheduled
+- Reduces the maximum application size
+- Floating point scanf support in the application needs to be enabled by `SCANF_FLOAT = 1` makefile variable
+
+Other changes:
+- Drops installation support on Ubuntu 16.04 OS
+
+Improvements:
+
+- Reduces radio receive energy consumption
+- Improves diagnostics
+- Improves Sense&Locate example
+- Adds modem hardware test support to at_modem example
+- Adds debug option to updater.py
+- Improves error report of updater.py
+- Reduces size of libraries for building applications
+
 ## 1.4.1
 
 API changes:
 
-- Adds API I2CInitEx to support different bus speeds
+- Adds API `I2CInitEx` to support different bus speeds
 
 Fixes:
 
@@ -18,10 +39,10 @@ Fixes:
 API changes:
 
 - Adds APIs to support suspend mode
-- Adds API MessageQueueClear to clear message queue
-- Adds pull option to pulse counter pin in PulseCounterInit API
+- Adds API `MessageQueueClear` to clear message queue
+- Adds pull option to pulse counter pin in `PulseCounterInit` API
 - Changes the TX on duration of RF test TX API
-- Changes return value of ScheduleMessage
+- Changes return value of `ScheduleMessage`
 - Deprecates DUMPTX environment variable and replaces it with SATTEST
 
 Improvements:
@@ -34,7 +55,7 @@ Improvements:
 
 Fixes:
 
-- Fixes the Band parameter to BoardAntennaSelect BSP API when the module is receiving
+- Fixes the Band parameter to `BoardAntennaSelect` BSP API when the module is receiving
 - Fixes a baud rate accuracy issue in SPI API when SPI_BAUDRATE_MAX is used
 
 ## 1.3.2
@@ -89,7 +110,7 @@ Fixes:
 
 API changes:
 
-- Deprecates ScheduleMessage return value
+- Deprecates `ScheduleMessage` return value
 
 Improvements:
 
@@ -170,13 +191,13 @@ Improvements:
 
 API Changes:
 
-- Changed the input paramter of BoardAntennaSelect to enable more control to the antenna select pin
+- Changed the input paramter of `BoardAntennaSelect` to enable more control to the antenna select pin
 - Adds support to wake up from LEUART interface and corresponding example code
 - Adds TimeSet to set the system time
 - Adds LocationSet to set the current location
 - Adds ModuleIDGet to get module ID string
 - Adds API to support satellite radio RF test
-- Adds BSP API BoardDebugRead
+- Adds BSP API `BoardDebugRead`
 
 Improvements:
 - Improves the pulse counter example code

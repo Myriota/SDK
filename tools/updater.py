@@ -25,6 +25,8 @@ from io import BytesIO
 import signal
 import sys
 
+version = "1.0"
+
 
 def get_ports():
     ports = set()
@@ -96,6 +98,8 @@ def capture_bootloader(ser):
         out += ser.readline()
         out += ser.readline()
     if b"Unknown" in out or b"Bootloader" in out:
+        ser.readline()
+        ser.readline()
         return
     print("Please reset the device", end="")
     sys.stdout.flush()
@@ -111,6 +115,9 @@ def capture_bootloader(ser):
         out = line
         if b"Bootloader" in line:
             print("\n")
+            ser.readline()
+            ser.readline()
+            ser.readline()
             ser.readline()
             break
         if line is not None:
@@ -140,24 +147,24 @@ def calc_crc(data):
     return crc
 
 
-def xmodem_send(serial, file, quiet=True):
+def xmodem_send(serial, file, ncg, quiet=True):
     SOH = bytes(bytearray([0x01]))
     EOT = bytes(bytearray([0x04]))
     ACK = bytes(bytearray([0x06]))
     NAK = bytes(bytearray([0x15]))
     NCG = b"C"
     DATA_SIZE = 128
-
-    t = 0
-    while True:
-        if serial.read(1) != NCG:
-            t = t + 1
-            if t == 10:
-                print("*", end="")
-                sys.stdout.flush()
-                return False
-        else:
-            break
+    if not ncg:
+        t = 0
+        while True:
+            if serial.read(1) != NCG:
+                t = t + 1
+                if t == 10:
+                    print("*", end="")
+                    sys.stdout.flush()
+                    return False
+            else:
+                break
     pn = 1
     file.seek(0)
     data = bytearray(file.read(DATA_SIZE))
@@ -213,6 +220,7 @@ def xmodem_send(serial, file, quiet=True):
 def update_stream(ser, command, stream):
     sys.stdout.flush()
     retries = 3
+    update_in_progress = False
     while True:
         stream.seek(0)
         ser.reset_input_buffer()
@@ -221,8 +229,20 @@ def update_stream(ser, command, stream):
         out = b""
         out += ser.readline()
         out += ser.readline()
+        out += ser.readline()
+        ncg = False
+        if b"C" in out:
+            ncg = True
+        else:
+            if not update_in_progress:
+                sys.stderr.write("partition error\n")
+                sys.stderr.write(
+                    "Please confirm if correct system image has been programmed\n"
+                )
+                return False
         if b"Ready" in out:
-            if xmodem_send(ser, stream):
+            update_in_progress = True
+            if xmodem_send(ser, stream, ncg):
                 stream.close()
                 return True
         retries -= 1
@@ -239,7 +259,7 @@ def update_image(ser, command, filename):
     try:
         stream = open(filename, "rb")
     except IOError:
-        sys.stderr.write("failed to open the file\n")
+        sys.stderr.write("failed to open the file " + filename + "\n")
         return False
     print(
         "\nProgramming %s (%dK) "
@@ -346,7 +366,7 @@ def main():
     port_name = "None"
 
     parser = argparse.ArgumentParser(
-        description="Myriota device updater",
+        description="Myriota device updater " + version,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -461,6 +481,15 @@ def main():
         help="listen to serial port",
     )
 
+    parser.add_argument(
+        "-x",
+        "--debug",
+        dest="debug",
+        action="store_true",
+        default=False,
+        help="interactive debug mode",
+    )
+
     args = parser.parse_args()
 
     if args.default_port_flag:
@@ -484,6 +513,11 @@ def main():
             br = args.baud_rate
     else:
         br = 115200
+
+    if args.debug:
+        print("Entering interactive debug mode")
+        cmd = "python -m serial.tools.miniterm --raw " + port_name + " " + str(br)
+        os.system(cmd)
 
     if args.wait_flag:
         print("Waiting for serial port", port_name, br)
