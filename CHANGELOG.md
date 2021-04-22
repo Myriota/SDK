@@ -1,11 +1,25 @@
 # Changelog
 
+## 1.5.1
+
+Fixes:
+
+- Fixes the hard fault when no user job is scheduled and suspend mode is enabled
+- Fixes an issue where impending satellite passes within 10 minutes won't be returned from BeforeSatelliteTransmit or predicted after initial GNSS fix
+
+Improvements:
+
+- Increases TX rate to improve network uplink capacity
+- Improves handling of enabling suspend mode in BoardStart
+- Improves handling of scheduling user jobs in BoardStart
+- Adds unpacker example for the SnL example application
+
 ## 1.5.0
 
 API changes:
 
 - Returns error from `ScheduleMessage` if a message of zero length is scheduled
-- Reduces the maximum application size
+- Reduces the flash size available to the application
 - Floating point scanf support in the application needs to be enabled by `SCANF_FLOAT = 1` makefile variable
 
 Other changes:
@@ -15,6 +29,7 @@ Improvements:
 
 - Reduces radio receive energy consumption
 - Improves diagnostics
+- Reduces radio receive energy consumption
 - Improves Sense&Locate example
 - Adds modem hardware test support to at_modem example
 - Adds debug option to updater.py

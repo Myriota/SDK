@@ -136,6 +136,7 @@ double myriota_complex_abs(myriota_complex x) { return cabs(x); }
 double myriota_complex_arg(myriota_complex x) { return carg(x); }
 double myriota_complex_real(myriota_complex x) { return creal(x); }
 double myriota_complex_imag(myriota_complex x) { return cimag(x); }
+myriota_complex myriota_complex_conj(myriota_complex x) { return conj(x); }
 
 double myriota_sinc(double t) {
   if (fabs(t) < 5e-3) return 1.0 - t * t * (1.0 / 6 - 1.0 / 120 * t * t);

@@ -562,7 +562,7 @@ def main():
                 serial_port.close()
                 sys.exit(1)
 
-    if update_commands and not args.network_info_bin_name and not args.test_image_name:
+    if args.system_image_name or args.user_app_name:
         # Force to clear network info
         zero_stream = BytesIO(b"\0\0\0\0\0\0\0\0\0\0")
         if not update_stream(serial_port, "o", zero_stream):

@@ -65,8 +65,8 @@ __attribute__((weak)) int BoardStart(void) {
 
   printf("Myriota development board %s %s variant %s %s\n",
          IsV1() ? "v1" : "v2",
-         GPIOGet(MODULE_BAND_PIN) == GPIO_HIGH ? "VHF" : "UHF", ModuleIDGet(),
-         RegistrationCodeGet());
+         GPIOGet(MODULE_BAND_PIN) == GPIO_HIGH ? "service 1" : "service 2",
+         ModuleIDGet(), RegistrationCodeGet());
   char *EnvStr = BoardEnvGet();
   if (EnvStr && strlen(EnvStr)) {
     printf("Using env %s\n", EnvStr);

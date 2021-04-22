@@ -93,6 +93,9 @@ double myriota_complex_abs(myriota_complex x);
 // Phase/argument/angle of a complex number
 double myriota_complex_arg(myriota_complex x);
 
+// Conjugate of a complex number
+myriota_complex myriota_complex_conj(myriota_complex x);
+
 // real and imaginary parts
 double myriota_complex_real(myriota_complex x);
 double myriota_complex_imag(myriota_complex x);

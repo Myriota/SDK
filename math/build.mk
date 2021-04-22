@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2021, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -21,7 +21,7 @@ CEXT?=c
 CPPEXT?=cpp
 
 # get c and cpp sources and corresponding objects
-MATH_BUILD_DIR := $(abspath .obj)
+MATH_BUILD_DIR ?= $(abspath .obj)
 MATH_SRC_DIR := $(abspath $(ROOTDIR)/math)
 MATH_SRC := $(call allsourceindirs,$(MATH_SRC_DIR) ,$(ASMEXT) $(CEXT) $(CPPEXT))
 MATH_SRC := $(filter-out $(MATH_SRC_DIR)/myriotacommon.c, $(MATH_SRC))
