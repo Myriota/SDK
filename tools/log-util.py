@@ -23,7 +23,6 @@ import serial.tools.list_ports
 import argparse
 import binascii
 import signal
-import sys
 
 errors = {
     0: "Internal test",
@@ -231,8 +230,8 @@ def decode_log(logfile):
                     else:
                         dump_bytes(bytes)
                         continue
-            print("====%s Unknown error code %d====" % (time_string, code))
             if length != 0:
+                print("====%s Unknown error code %d====" % (time_string, code))
                 bytes = read_and_check_completion(binary_file, length)
                 if bytes is None:
                     return is_empty
@@ -325,8 +324,11 @@ def purge_log(ser):
         out = ""
         out = ser.readline()
         if b"purged" in out:
+            print("The log has been purged")
             break
-    print("The log has been purged")
+        if b"Fail" in out:
+            print("Failed to purge")
+            break
 
 
 def signal_handler(signal, frame):

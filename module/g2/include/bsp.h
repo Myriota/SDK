@@ -36,9 +36,12 @@
 /// Get board-specific environment variables
 /// Returns string which contains semicolon separated variables.
 /// - GNSSFIX
-///     - 0: skip system GNSS fix
+///     - 0: skip system GNSS fix and initial location is invalid
 ///     - 1: get time only after location has been fixed or set
-///     - unset: do system GNSS fix
+///     - 2: get time and do GNSS 2D fix
+///     - 3: get time and do GNSS 3D fix; this is default mode
+///     - 4: skip system GNSS fix and intitial location is set to 0,0
+///     - unset: the same as 3
 ///     .
 /// - DUMPTX (Deprecated, do not use)
 ///     - 1: dump transmission information

@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2021, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -11,18 +11,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 export BOARD?=MyriotaDB
 
 OBJ_DIR:=obj
 NETWORK_INFO_DIR:=network_info
+RAW_BINARY_DIR:=raw_binary
+BUILD_WITH_NETWORKINFO?=0
 
 include $(ROOTDIR)/module/g2/flags.mk
 include $(ROOTDIR)/module/builtin.mk
 
 PROGRAM_NAME?=app
-PROGRAM_NAME_BIN:=$(PROGRAM_NAME).bin
+PROGRAM_RAW_BIN:=$(PROGRAM_NAME)_raw.bin
 PROGRAM_NAME_ELF:=$(PROGRAM_NAME).elf
+APPLICATION_NETWORKINFO_BIN:=$(PROGRAM_NAME).bin
 
 BSP_PATH?=$(ROOTDIR)/module/g2/boards/$(BOARD)
 
@@ -52,22 +54,30 @@ $(OBJ_DIR)/%.o : %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
-$(PROGRAM_NAME): $(PROGRAM_NAME_BIN)
+$(PROGRAM_NAME): $(APPLICATION_NETWORKINFO_BIN)
 
-$(PROGRAM_NAME_BIN): $(OBJ_DIR)/$(PROGRAM_NAME_ELF) $(buildkey)
-	arm-none-eabi-objcopy -O binary $< $@
-	@(printf "0: "; xxd -ps -c32 $(buildkey)) | xxd -r - $@
+$(APPLICATION_NETWORKINFO_BIN): $(OBJ_DIR)/$(PROGRAM_NAME_ELF) $(buildkey)
+	arm-none-eabi-objcopy -O binary $< $(PROGRAM_RAW_BIN)
+	@(printf "0: "; xxd -ps -c32 $(buildkey)) | xxd -r - $(PROGRAM_RAW_BIN)
 ifneq (,$(findstring $(BSP_PATH)/bsp.c,$(APP_SRC)))
 	@echo "***Default BSP will be deprecated, please create BSP file (bsp.c) under the application folder***"
+endif
+ifeq (0, $(BUILD_WITH_NETWORKINFO))
+	@mkdir -p $(RAW_BINARY_DIR);
+	@cp -u $(NETWORK_INFO_DIR)/$(SATELLITES) $(RAW_BINARY_DIR)/$(LATEST_NETWORK_INFO).bin
+	@mv -u $(PROGRAM_RAW_BIN) $(RAW_BINARY_DIR)/$(PROGRAM_RAW_BIN)
+	$(ROOTDIR)/tools/merge_binary.py -n $(RAW_BINARY_DIR)/$(LATEST_NETWORK_INFO).bin -u $(RAW_BINARY_DIR)/$(PROGRAM_RAW_BIN) -o $@
+else
+	@mv -u $(PROGRAM_RAW_BIN) $(APPLICATION_NETWORKINFO_BIN)
 endif
 	@echo "Build has completed!"
 
 $(OBJ_DIR)/$(PROGRAM_NAME_ELF): $(LIBS) $(OBJ_LIST)
-	$(CC) $(OBJ_LIST) -Wl,--whole-archive $(LIBS) $(LDFLAGS) -Wl,--no-whole-archive -o $@
+	$(CC) $(OBJ_LIST) -Wl,--print-memory-usage -Wl,--whole-archive $(LIBS) $(LDFLAGS) -Wl,--no-whole-archive -o $@
 
 clean:
-	rm -f $(OBJ_LIST) $(PROGRAM_NAME_BIN) $(PROGRAM_NAME_ELF)
-	rm -rf $(OBJ_DIR)
+	rm -f $(OBJ_LIST) *.bin $(PROGRAM_NAME_ELF)
+	rm -rf $(OBJ_DIR) $(RAW_BINARY_DIR)
 
 .DEFAULT_GOAL:=$(PROGRAM_NAME)
 

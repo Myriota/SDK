@@ -428,6 +428,22 @@ double myriota_minimise(double (*f)(double, void *), void *fdata,
   return myriota_minimise(f, fdata, a, bt, tol);
 }
 
+// integrate the function f from a to infinity using the substitution x = a +
+// (t/(1-t))
+double myriota_integrate_infty(double (*f)(double, void *), void *fdata,
+                               const double a, const int N) {
+  const double delta = 1.0 / N;
+  double inner = 0.0;
+  for (int i = 1; i < N; i++) {
+    const double x = a + (double)i / (N - i);
+    inner += f(x, fdata) * pow(1 - i * delta, -2);
+  }
+
+  return delta *
+         (inner + 0.5 * f(a, fdata));  // take upper endpoint to be 0 as
+                                       // f(infty) = 0 if the integral converges
+}
+
 double myriota_unwrap(const double value, const double previous_value) {
   const double d = myriota_fracpart_scaled(value - previous_value, 2 * pi);
   if (d > pi) return d + previous_value - 2 * pi;
@@ -492,87 +508,6 @@ void myriota_msequence(const int N, int *r) {
     m[0] = buf;
     r[ind] = m[N - 1];
   }
-}
-
-myriota_complex myriota_discrete_fourier_transform(const unsigned int N,
-                                                   const myriota_complex *in,
-                                                   const double f) {
-  myriota_complex sum = 0;
-  for (int n = 0; n < N; n++) sum += myriota_polar(1, -2 * pi * n * f) * in[n];
-  return sum;
-}
-
-// FFT/IFFT routine. (see pages 507-508 of Numerical Recipes in C)
-static void myriota_fft_internal(double data[], int nn, int isign) {
-  int n, mmax, m, j, istep, i;
-  double wtemp, wr, wpr, wpi, wi, theta;
-  double tempr, tempi;
-
-  n = nn << 1;
-  j = 1;
-  for (i = 1; i < n; i += 2) {
-    if (j > i) {
-      tempr = data[j - 1];
-      data[j - 1] = data[i - 1];
-      data[i - 1] = tempr;
-      tempr = data[j];
-      data[j] = data[i];
-      data[i] = tempr;
-    }
-    m = n >> 1;
-    while (m >= 2 && j > m) {
-      j -= m;
-      m >>= 1;
-    }
-    j += m;
-  }
-  mmax = 2;
-  while (n > mmax) {
-    istep = 2 * mmax;
-    theta = -2 * pi / (isign * mmax);
-    wtemp = sin(0.5 * theta);
-    wpr = -2.0 * wtemp * wtemp;
-    wpi = sin(theta);
-    wr = 1.0;
-    wi = 0.0;
-    for (m = 1; m < mmax; m += 2) {
-      for (i = m; i <= n; i += istep) {
-        j = i + mmax;
-        tempr = wr * data[j - 1] - wi * data[j];
-        tempi = wr * data[j] + wi * data[j - 1];
-        data[j - 1] = data[i - 1] - tempr;
-        data[j] = data[i] - tempi;
-        data[i - 1] += tempr;
-        data[i] += tempi;
-      }
-      wr = (wtemp = wr) * wpr - wi * wpi + wr;
-      wi = wi * wpr + wtemp * wpi + wi;
-    }
-    mmax = istep;
-  }
-}
-
-// Does forward and inverse ffts,
-// isign=1 forward, isign=-1 inverse
-static void myriota_fft_internal2(const unsigned int N,
-                                  const myriota_complex *in,
-                                  myriota_complex *out, int isign) {
-  if (!myriota_is_power_of_two(N)) {
-    error_message_and_exit(" N must be a power of 2 for FFT \n");
-  }
-  if (in != out) memcpy(out, in, sizeof(myriota_complex) * N);
-  myriota_fft_internal((double *)out, N, isign);
-}
-
-void myriota_fft(const unsigned int N, const myriota_complex *in,
-                 myriota_complex *out) {
-  myriota_fft_internal2(N, in, out, 1);
-}
-
-void myriota_inverse_fft(const unsigned int N, const myriota_complex *in,
-                         myriota_complex *out) {
-  myriota_fft_internal2(N, in, out, -1);
-  for (int n = 0; n < N; n++) out[n] /= N;
 }
 
 int myriota_sort_unique(void *base, size_t nitems, size_t size,

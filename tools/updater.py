@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2021, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -21,11 +21,13 @@ import serial
 import serial.tools.list_ports
 import argparse
 import os
+import struct
+import tempfile
 from io import BytesIO
 import signal
 import sys
 
-version = "1.0"
+version = "1.1"
 
 
 def get_ports():
@@ -64,7 +66,7 @@ def open_serial_port(portname, baudrate):
             timeout=0.5,
         )
     except (OSError, serial.SerialException):
-        print("Failed to open", portname)
+        sys.stderr.write("Failed to open %s\n" % portname)
         sys.exit(1)
     return ser
 
@@ -135,15 +137,25 @@ def capture_bootloader(ser):
     ser.reset_input_buffer()
 
 
+def _bytecrc(crc, poly, n):
+    mask = 1 << (n - 1)
+    for i in range(8):
+        if crc & mask:
+            crc = (crc << 1) ^ poly
+        else:
+            crc = crc << 1
+    mask = (1 << n) - 1
+    crc = crc & mask
+    return crc
+
+
 def calc_crc(data):
+    poly = 0x11021
+    bit_size = 16
+    table = [_bytecrc(i << (bit_size - 8), poly, bit_size) for i in range(256)]
     crc = 0
     for b in data:
-        crc = crc ^ (b << 8)
-        for i in range(8):
-            if crc & 0x8000:
-                crc = (crc << 1) ^ 0x1021
-            else:
-                crc <<= 1
+        crc = table[b ^ ((crc >> 8) & 0xFF)] ^ ((crc << 8) & 0xFF00)
     return crc
 
 
@@ -230,17 +242,18 @@ def update_stream(ser, command, stream):
         out += ser.readline()
         out += ser.readline()
         out += ser.readline()
+        out += ser.readline()
         ncg = False
         if b"C" in out:
             ncg = True
         else:
-            if not update_in_progress:
+            if not update_in_progress and b"Fail" in out and retries <= 1:
                 sys.stderr.write("partition error\n")
                 sys.stderr.write(
                     "Please confirm if correct system image has been programmed\n"
                 )
                 return False
-        if b"Ready" in out:
+        if b"Ready" in out and not b"Fail" in out:
             update_in_progress = True
             if xmodem_send(ser, stream, ncg):
                 stream.close()
@@ -255,15 +268,22 @@ def update_stream(ser, command, stream):
     return False
 
 
-def update_image(ser, command, filename):
+def update_image(ser, command, filename, handle=None):
     try:
-        stream = open(filename, "rb")
+        if handle is None:
+            stream = open(filename, "rb")
+        else:
+            stream = handle
     except IOError:
-        sys.stderr.write("failed to open the file " + filename + "\n")
+        sys.stdout.flush()
+        sys.stderr.write("\nCan't open %s\n" % filename)
         return False
+
+    stream.seek(0, os.SEEK_END)
+    file_size = stream.tell()
+    stream.seek(0, os.SEEK_SET)
     print(
-        "\nProgramming %s (%dK) "
-        % (filename, (os.path.getsize(filename) + 1023) / 1024),
+        "\nProgramming %s (%dK) " % (filename, (file_size + 1023) / 1024),
         end="",
     )
     return update_stream(ser, command, stream)
@@ -291,7 +311,7 @@ def get_id(ser):
             print(out.decode("utf-8"))
             break
         if retries > MAX_RETRIES:
-            print("Failed to read ID\n")
+            sys.stderr.write("Failed to read ID\n")
             break
 
 
@@ -312,7 +332,7 @@ def get_regcode(ser):
             print(out.decode("utf-8"))
             break
         if retries > MAX_RETRIES:
-            print("Failed to read regcode\n")
+            sys.stderr.write("Failed to read regcode\n")
             break
 
 
@@ -351,8 +371,87 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 
+file_types = {
+    1: "system image",
+    2: "user application",
+    3: "network information",
+}
+
+
 serial_port = None
 FIRMWARE_START_ADDRESS = 0x4000
+header_length = 16
+header_version = 0
+
+
+def is_merged_binary(filename):
+    try:
+        with open(filename, "rb") as input_file:
+            totalsize = os.stat(filename).st_size
+            if totalsize <= header_length:
+                return False
+
+            offset = 0
+            while offset < totalsize:
+                input_file.seek(2, os.SEEK_CUR)
+                ftype = struct.unpack("<H", input_file.read(2))[0]
+                if not ftype in file_types:
+                    return False
+
+                flen = struct.unpack("<I", input_file.read(4))[0]
+                reserved = struct.unpack("<I", input_file.read(4))[0]
+                reserved = struct.unpack("<H", input_file.read(2))[0]
+                checksum = struct.unpack("<H", input_file.read(2))[0]
+                input_file.seek(0 - header_length, os.SEEK_CUR)
+                data = bytearray(input_file.read(header_length + flen))
+                data[14] = data[15] = 0
+                if checksum != (calc_crc(data) & 0xFFFF):
+                    return False
+
+                offset += header_length + flen
+            return True
+    except IOError:
+        sys.stderr.write("Can't open %s\n" % filename)
+        sys.exit(1)
+
+
+def append_merged_files(filename, command):
+    with open(filename, "rb") as input_file:
+        offset = 0
+        while offset < os.stat(filename).st_size:
+            header_version = struct.unpack("<B", input_file.read(1))[0]
+            reserved = struct.unpack("<B", input_file.read(1))[0]
+            ftype = struct.unpack("<H", input_file.read(2))[0]
+            flen = struct.unpack("<I", input_file.read(4))[0]
+            input_file.seek(8, os.SEEK_CUR)
+            output_temp = tempfile.NamedTemporaryFile(mode="w+b", delete=False)
+            output_temp.write(input_file.read(flen))
+            if ftype == 1:
+                command.append(
+                    [
+                        "a%x" % FIRMWARE_START_ADDRESS,
+                        filename + "(" + file_types.get(ftype) + ")",
+                        output_temp,
+                    ]
+                )
+            if ftype == 2:
+                command.append(
+                    [
+                        "s",
+                        filename + "(" + file_types.get(ftype) + ")",
+                        output_temp,
+                    ]
+                )
+            if ftype == 3:
+                command.append(
+                    [
+                        "o",
+                        filename + "(" + file_types.get(ftype) + ")",
+                        output_temp,
+                    ]
+                )
+            output_temp.flush()
+            offset += flen + header_length
 
 
 def main():
@@ -380,7 +479,7 @@ def main():
         "-u",
         "--user_app",
         dest="user_app_name",
-        help="user application FILE to update with",
+        help="user application or user application merged with network information FILE to update with",
         metavar="FILE",
     )
     parser.add_argument(
@@ -388,6 +487,13 @@ def main():
         "--network_info",
         dest="network_info_bin_name",
         help="network info binary FILE to update with",
+        metavar="FILE",
+    )
+    parser.add_argument(
+        "-m",
+        "--merged_file",
+        dest="merged_bin_name",
+        help="merged FILE to update with",
         metavar="FILE",
     )
     parser.add_argument(
@@ -504,11 +610,11 @@ def main():
 
     if args.baud_rate:
         if int(args.baud_rate) < 9600:
-            print("Baudrate fails, minimum is 9600")
-            sys.exit(0)
+            sys.stderr.write("Failed to set baudrate, minimum is 9600\n")
+            sys.exit(1)
         elif int(args.baud_rate) > 921600:
-            print("Baudrate fails, maximum is 921600")
-            sys.exit(0)
+            sys.stderr.write("Failed to set baudrate, maximum is 921600\n")
+            sys.exit(1)
         else:
             br = args.baud_rate
     else:
@@ -543,31 +649,40 @@ def main():
 
     update_commands = []
     if args.system_image_name:
-        update_commands.append(["a%x" % FIRMWARE_START_ADDRESS, args.system_image_name])
+        update_commands.append(
+            ["a%x" % FIRMWARE_START_ADDRESS, args.system_image_name, None]
+        )
     if args.user_app_name:
-        update_commands.append(["s", args.user_app_name])
+        if is_merged_binary(args.user_app_name):
+            append_merged_files(args.user_app_name, update_commands)
+        else:
+            update_commands.append(["s", args.user_app_name, None])
     if args.network_info_bin_name:
-        update_commands.append(["o", args.network_info_bin_name])
+        update_commands.append(["o", args.network_info_bin_name, None])
+    if args.merged_bin_name:
+        if is_merged_binary(args.merged_bin_name):
+            append_merged_files(args.merged_bin_name, update_commands)
+        else:
+            sys.stderr.write("Failed to extract files\n")
+            sys.exit(1)
     if args.raw_commands is not None:
+        args.raw_commands[0].extend([None])
         update_commands += args.raw_commands
     if args.test_image_name:
-        update_commands.append(["a%x" % FIRMWARE_START_ADDRESS, args.test_image_name])
+        update_commands.append(
+            ["a%x" % FIRMWARE_START_ADDRESS, args.test_image_name, None]
+        )
 
     if update_commands:
         capture_bootloader(serial_port)
         for d in update_commands:
-            if update_image(serial_port, d[0], d[1]):
-                print("done")
+            if update_image(serial_port, d[0], d[1], d[2]):
+                print("done", end="")
             else:
+                sys.stderr.write("Update failed!\n")
                 serial_port.close()
                 sys.exit(1)
-
-    if args.system_image_name or args.user_app_name:
-        # Force to clear network info
-        zero_stream = BytesIO(b"\0\0\0\0\0\0\0\0\0\0")
-        if not update_stream(serial_port, "o", zero_stream):
-            print("Update failed")
-            sys.exit(1)
+        print("\nUpdate done!\n")
 
     if args.start_flag:
         print("Starting the application")

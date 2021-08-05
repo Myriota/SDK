@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.5.2
+
+API changes:
+
+- Changes the `GNSSFIX` environment variable for satellite simulator mode (lab mode)
+- Network information and user application binaries for programming via XMODEM tool or SWD hardware interface are generated under the `raw_binary` folder
+
+Improvements:
+
+- Adds support to separate the network information from the user application
+  - the user application can fully utilise the 34k-byte flash memory allocated to it
+  - network information and user application can be updated individually during development and manufacturing
+- Adds `merge_binary.py` tool to merge multiple firmware files into one
+    - multiple different types of files can be merged into one and updated by `updater.py` with `-m` option
+    - file contents are CRC checked to detect corruption
+    - the network information and the user application are merged together by default and can be updated by either `-u` for backward compatibility or `-m`
+- Adds support to print memory usages when building the user application
+- Improves `message_inject.py` error handling when the module ID specified does not exist
+- Adds CloudFormation template of an AWS lambda for the tracker example application
+- System GNSS update job won't run when system GNSS fix is skipped to reduce module wakeups
+- Adds redirection support for network information download to be future-proof
+- Improves `log-util.py` error handling when log purging fails
+
+Fixes:
+
+- Fixes an issue in `BeforeSatelliteTransmit` where time based on an invalid transmit opportunity may be returned
+- Fixes an issue in `updater.py` where failed communication during updating may be recognised as partition error
+- Fixes an issue in `log-util.py` when decoding user log entries with zero length
+- Fixes an issue where suspend mode can't be disabled in `BoardStart`
+- Fixes an issue when the system GNSS is skipped causing delayed diagnostic messages
+- Fixes an issue when the system GNSS is skipped the location set is reset to default after disabling suspend mode
+
 ## 1.5.1
 
 Fixes:
@@ -23,13 +55,13 @@ API changes:
 - Floating point scanf support in the application needs to be enabled by `SCANF_FLOAT = 1` makefile variable
 
 Other changes:
+
 - Drops installation support on Ubuntu 16.04 OS
 
 Improvements:
 
 - Reduces radio receive energy consumption
 - Improves diagnostics
-- Reduces radio receive energy consumption
 - Improves Sense&Locate example
 - Adds modem hardware test support to at_modem example
 - Adds debug option to updater.py
@@ -114,6 +146,7 @@ Improvements:
 - Adds support to update network information via updater.py
 - Improves Sense&Locate example
 - Reformats Python tools
+- Additional module frequency capabilities
 
 ## 1.2.2
 
@@ -146,7 +179,7 @@ Fixes:
 - Fixes an issue where the module may not sleep properly
 - Fixes an issue where user job may hang after disabling debug output
 
- Improvements:
+Improvements:
 
 - Adds OTA network updates support
 - Adds more system diagnostics
@@ -196,7 +229,6 @@ API changes:
 
 - ModuleIDGet returns module part number as well
 
-
 Improvements:
 
 - Adds support to dump encoded messages for injection when running in LabWithLocation mode
@@ -215,6 +247,7 @@ API Changes:
 - Adds BSP API `BoardDebugRead`
 
 Improvements:
+
 - Improves the pulse counter example code
 - Improves updater.py to support waiting for serial port to be ready
 

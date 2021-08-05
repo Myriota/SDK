@@ -19,24 +19,15 @@ static double h(double t, double W) {
   return myriota_sinc(t) * myriota_blackman(t, W);
 }
 
-Resampler::Resampler(double in_rate, double out_rate, double W)
-    : W(W),
-      r(myriota_rational_approximation(out_rate / in_rate, 1e-6, 1000, 10)),
-      gamma((1.0 * r.p) / r.q),
-      kappa(fmin(1, gamma)),
-      delta(fmax(1, gamma)),
-      xi(r.p > r.q ? r.p : r.q),
-      gmin(ceil(-xi * W)),
-      gmax(floor(xi * W)),
-      a(ceil((2 * W) / kappa + 1), 0.0) {
-  // fill resampling filter buffer
+ResampleDouble::ResampleDouble(double in_rate, double out_rate, double W)
+    : Resample<complex>(in_rate, out_rate, W, 0.0) {
   for (int n = gmin; n <= gmax; n++) {
     const double t = (1.0 * n) / xi;
     g_buf.push_back(h(t, W));
   }
 }
 
-complex Resampler::operator()(int64_t n) const {
+complex ResampleDouble::operator()(int64_t n) const {
   const double ng = n / gamma;
   const double Wk = W / kappa;
   const int64_t L = ceil(ng - Wk);
@@ -46,9 +37,9 @@ complex Resampler::operator()(int64_t n) const {
   return kappa * sum;
 }
 
-double Resampler16::g(int64_t n) const { return h((1.0 * n) / xi, W); }
+double Resample16::g(int64_t n) const { return h((1.0 * n) / xi, W); }
 
-double Resampler16::beta() const {
+double Resample16::beta() const {
   double b = 0;
   for (int n = 0; n < r.p; n++) {
     const double ng = n / gamma;
@@ -62,23 +53,15 @@ double Resampler16::beta() const {
   return kappa * b;
 }
 
-Resampler16::Resampler16(double in_rate, double out_rate, double W)
-    : W(W),
-      r(myriota_rational_approximation(out_rate / in_rate, 1e-6, 1000, 10)),
-      gamma((1.0 * r.p) / r.q),
-      kappa(fmin(1, gamma)),
-      delta(fmax(1, gamma)),
-      xi(r.p > r.q ? r.p : r.q),
-      gmin(ceil(-xi * W)),
-      gmax(floor(xi * W)),
-      alpha(floor((1 << 16) / beta())),
-      a(ceil((2 * W) / kappa + 1), (myriota_complex_16){0, 0}) {
-  // fill resampling filter buffer
+Resample16::Resample16(double in_rate, double out_rate, double W)
+    : Resample<myriota_complex_16>(in_rate, out_rate, W,
+                                   (myriota_complex_16){0, 0}),
+      alpha(floor((1 << 16) / beta())) {
   for (int n = gmin; n <= gmax; n++)
     f_buf.push_back(floor(kappa * alpha * g(n)));
 }
 
-myriota_complex_16 Resampler16::operator()(int64_t n) const {
+myriota_complex_32 Resample16::n32(int64_t n) const {
   const double ng = n / gamma;
   const double Wk = W / kappa;
   const int64_t U = floor(ng + Wk);
@@ -92,8 +75,27 @@ myriota_complex_16 Resampler16::operator()(int64_t n) const {
     re += am.re * fv;
     im += am.im * fv;
   }
-  return (myriota_complex_16){myriota_clip_16(re / alpha),
-                              myriota_clip_16(im / alpha)};
+  return (myriota_complex_32){re, im};
+}
+
+myriota_complex_16 Resample16::operator()(int64_t n) const {
+  const myriota_complex_32 x = n32(n);
+  return (myriota_complex_16){myriota_clip_16(x.re / alpha),
+                              myriota_clip_16(x.im / alpha)};
+}
+
+// signed divide by 2^s witout integer division
+static int32_t sdiv(const int32_t x, const int s) {
+  if (x >= 0)
+    return x >> s;
+  else
+    return (x + (1 << s)) >> s;
+}
+
+myriota_complex_16 Resample16shift::operator()(int64_t n) const {
+  const myriota_complex_32 x = n32(n);
+  return (myriota_complex_16){myriota_clip_16(sdiv(x.re, s)),
+                              myriota_clip_16(sdiv(x.im, s))};
 }
 
 }  // namespace myriota

@@ -20,30 +20,16 @@
 
 using namespace myriota;
 
-// Read complex sample from file
-template <class C>
-int read_sample(FILE *infile, C *sample) {
-  if (fread(sample, sizeof(C), 1, infile) < 1) return -1;
-  return 0;
-}
-
-// write complex sample to stdout
-template <class C>
-void write_sample(const C sample) {
-  if (fwrite(&sample, sizeof(C), 1, stdout) == 1) return;
-  fprintf(stderr, "resampler failed to write sample\n");
-  exit(EXIT_FAILURE);
-}
-
 template <class R, class C>
 void resample(FILE *infile, R &r) {
   for (int64_t n = 0; n >= 0; n++) {
     while (r.maxn() < n) {
       C x;
-      if (read_sample<C>(infile, &x)) return;
+      if (fread(&x, sizeof(C), 1, infile) != 1) return;
       r.push(x);
     }
-    write_sample<C>(r(n));
+    const C rn = r(n);
+    fwrite(&rn, sizeof(C), 1, stdout);
   }
 }
 
@@ -57,6 +43,10 @@ int main(int argc, char **argv) {
   cmd_parser.add(
       "int16", '\0',
       "16-bit fixed point implementation, int16 input, int16 output.");
+  cmd_parser.add("shift", '\0',
+                 "Replace division with shift, only with --int16 option.");
+  cmd_parser.add<std::string>("taps", '\0',
+                              "print filter taps in verilog format.", false);
   cmd_parser.set_description(
       "Resamples complex samples from input rate to output rate. Input samples "
       "via stdin, output samples are written to stdout. By default the input "
@@ -69,13 +59,26 @@ int main(int argc, char **argv) {
   const double out_rate = cmd_parser.get<double>("output_rate");
   const double W = cmd_parser.get<double>("window_width");
 
-  /// Upsampler or downsampler as required
-  if (cmd_parser.exist("int16")) {
-    Resampler16 r = Resampler16(in_rate, out_rate, W);
-    resample<Resampler16, myriota_complex_16>(stdin, r);
+  if (cmd_parser.exist("taps")) {
+    Resample16shift r = Resample16shift(in_rate, out_rate, W);
+    printf("alpha = %d\n", r.alpha);
+    printf("s = %d\n", r.s);
+    const char *name = cmd_parser.get<std::string>("taps").c_str();
+    printf("integer %s[0:%u];\n", name, (unsigned int)(r.taps().size() - 1));
+    for (unsigned int i = 0; i < r.taps().size(); i++)
+      printf("assign %s[%u] = %d;\n", name, i, r.taps()[i]);
+    return EXIT_SUCCESS;
+  }
+
+  if (cmd_parser.exist("int16") && cmd_parser.exist("shift")) {
+    Resample16shift r = Resample16shift(in_rate, out_rate, W);
+    resample<Resample16shift, myriota_complex_16>(stdin, r);
+  } else if (cmd_parser.exist("int16")) {
+    Resample16 r = Resample16(in_rate, out_rate, W);
+    resample<Resample16, myriota_complex_16>(stdin, r);
   } else {  // double format by default
-    Resampler r = Resampler(in_rate, out_rate, W);
-    resample<Resampler, complex>(stdin, r);
+    ResampleDouble r = ResampleDouble(in_rate, out_rate, W);
+    resample<ResampleDouble, complex>(stdin, r);
   }
 
   return EXIT_SUCCESS;

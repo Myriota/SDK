@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2021, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-OBJ_DIR:=obj
 NETWORK_INFO_DIR:=network_info
+OBJ_DIR:=obj
 
 include $(ROOTDIR)/module/sim/flags.mk
 include $(ROOTDIR)/module/builtin.mk

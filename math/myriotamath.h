@@ -14,6 +14,7 @@
 #ifndef MYRIOTA_MATH_H
 #define MYRIOTA_MATH_H
 
+#include <assert.h>
 #include <complex.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -306,10 +307,15 @@ double myriota_bisection(double (*f)(double, void *), void *fdata,
 double myriota_solve(double (*f)(double, void *), void *fdata, const double y,
                      const double ax, const double bx, const double tol);
 
-// Performs a 1-dimensional minimization of the function f by ternery search.
+// Performs a 1-dimensional minimization of the function f by ternary search.
 // Returns number x on interval [a,b] that locally minimises f(x,fdata).
 double myriota_minimise(double (*f)(double, void *), void *fdata,
                         const double a, const double b, const double tol);
+
+// integrate the function f from a to infinity using the substitution x = a +
+// (t/(1-t)) and N steps
+double myriota_integrate_infty(double (*f)(double, void *), void *fdata,
+                               const double a, const int N);
 
 // A function for unwrapping a phase wrapped sequence
 // Phase is assumed to reside in the interval [-pi, pi].
@@ -354,57 +360,34 @@ void myriota_rotate(int *array, int size, int n);
 // r is now {1,1,0,0,1,0,1}
 void myriota_msequence(const int N, int *r);
 
-// Returns the discrete Fourier transform of a complex array of length N
-// at frequency f in cycles per sample
-//
-// Usage:
-//
-// myriota_complex in[4] = {1, 1, 1, 1};
-// myriota_complex four, zero;
-// four = myriota_discrete_fourier_transform(4,in,0);
-// four = myriota_discrete_fourier_transform(4,in,1);
-// zero = myriota_discrete_fourier_transform(4,in,0.25);
-// zero = myriota_discrete_fourier_transform(4,in,0.5);
-myriota_complex myriota_discrete_fourier_transform(const unsigned int N,
-                                                   const myriota_complex *in,
-                                                   const double f);
-
-// Computes the fast Fourier transform of the complex array of length N and
-// returns result into complex array out. N must be a power of 2.
-//
-// Cooley-Tukey radix-2 decimation in time implementation. Input arrays must be
-// zero padded to length a power of 2.
-//
-// This implementation works inplace by setting out == in.
-void myriota_fft(const unsigned int N, const myriota_complex *in,
-                 myriota_complex *out);
-
-// Computes the inverse fast Fourier transform of the complex array of length N
-// and returns result into complex array out. N must be a power of 2.
-//
-// Cooley-Tukey radix-2 decimation in time implementation. Input arrays must be
-// zero padded to length a power of 2.
-//
-// This implementation works inplace by setting out == in.
-void myriota_inverse_fft(const unsigned int N, const myriota_complex *in,
-                         myriota_complex *out);
-
 // Like the standard qsort but also removes duplicates. Returns the number of
 // unique elements.
 int myriota_sort_unique(void *base, size_t nitems, size_t size,
                         int (*compar)(const void *, const void *));
 
-/// Complex 16 bit fixed point type
+// Complex 16 bit fixed point type
 typedef struct {
   int16_t re;
   int16_t im;
 } myriota_complex_16;
+
+// Complex 32 bit fixed point type
+typedef struct {
+  int32_t re;
+  int32_t im;
+} myriota_complex_32;
 
 // Clip signed 32 bit integer into interval [-2^15, 2^15)
 static inline int16_t myriota_clip_16(const int32_t x) {
   if (x > (1 << 15) - 1) return (1 << 15) - 1;
   if (x < -(1 << 15)) return -(1 << 15);
   return x;
+}
+
+// Complex addition of myriota_complex_32
+static inline myriota_complex_32 myriota_complex_sum_32(
+    const myriota_complex_32 a, const myriota_complex_32 b) {
+  return (myriota_complex_32){a.re + b.re, a.im + b.im};
 }
 
 #ifdef __cplusplus
@@ -454,16 +437,6 @@ class CircularBuffer {
   // Read the nth element of the buffer
   inline const T &operator()(const int64_t n) const { return buf[n & mask]; }
 
-  // Read the nth element of the buffer after index validation. Throws
-  // std::out_of_range if the requested element hasn't been pushed yet or
-  // is no longer in the buffer. Analogous to std::vector::at.
-  const T &at(const int64_t n) const {
-    if (n >= minn() && n <= maxn()) return (*this)(n);
-    throw std::out_of_range("circluar buffer at " + std::to_string(n) +
-                            " outside [" + std::to_string(minn()) + ", " +
-                            std::to_string(maxn()) + "]");
-  }
-
   void set(const int64_t n, const T &v) {
     if (n >= minn() && n <= maxn())
       buf[n & mask] = v;
@@ -478,7 +451,8 @@ class CircularBuffer {
   uint64_t N;
 };
 
-class Resampler {
+template <typename T>
+class Resample {
  public:
   const double W;  // window width
   const myriota_rational r;
@@ -489,45 +463,65 @@ class Resampler {
   const int gmin;
   const int gmax;
   // Widow width W can be adjusted, larger is slower, but more accurate
-  Resampler(double in_rate, double out_rate, double W = 30);
-  void push(complex x) { a.push(x); };
+  Resample(double in_rate, double out_rate, double W, T zero)
+      : W(W),
+        r(myriota_rational_approximation(out_rate / in_rate, 1e-6, 1000, 10)),
+        gamma((1.0 * r.p) / r.q),
+        kappa(fmin(1, gamma)),
+        delta(fmax(1, gamma)),
+        xi(r.p > r.q ? r.p : r.q),
+        gmin(ceil(-xi * W)),
+        gmax(floor(xi * W)),
+        a(ceil((2 * W) / kappa + 1), zero){};
+  void push(T x) { a.push(x); };
   int64_t pushed() const { return a.pushed(); }
-  complex operator()(int64_t n) const;
+  virtual T operator()(int64_t n) const = 0;
   int64_t minn() const { return ceil(gamma * (a.maxn() - a.size) + delta * W); }
   int64_t maxn() const { return floor(gamma * (a.maxn() - 1) - delta * W); }
 
  protected:
-  CircularBuffer<complex> a;
+  CircularBuffer<T> a;
+};
+
+class ResampleDouble : public Resample<complex> {
+ public:
+  // Widow width W can be adjusted, larger is slower, but more accurate
+  ResampleDouble(double in_rate, double out_rate, double W = 30);
+  virtual complex operator()(int64_t n) const override;
+
+ protected:
   std::vector<double> g_buf;
   inline double g(int64_t n) const { return g_buf[n - gmin]; };
 };
 
 // Resample 16-bit fixed point input sequence
-class Resampler16 {
+class Resample16 : public Resample<myriota_complex_16> {
  public:
-  const double W;  // window width
-  const myriota_rational r;
-  const double gamma;
-  const double kappa;
-  const double delta;
-  const int xi;
-  const int gmin;
-  const int gmax;
   const int32_t alpha;
   // Widow width W can be adjusted, larger is slower, but more accurate
-  Resampler16(double in_rate, double out_rate, double W = 30);
-  void push(myriota_complex_16 x) { a.push(x); };
-  int64_t pushed() const { return a.pushed(); }
-  myriota_complex_16 operator()(int64_t n) const;
-  int64_t minn() const { return ceil(gamma * (a.maxn() - a.size) + delta * W); }
-  int64_t maxn() const { return floor(gamma * (a.maxn() - 1) - delta * W); }
+  Resample16(double in_rate, double out_rate, double W = 30);
+  myriota_complex_16 operator()(int64_t n) const override;
+  // nth output sample at 32 bit precision
+  myriota_complex_32 n32(int64_t n) const;
   double beta() const;        // fixed point scaling paramter
   double g(int64_t n) const;  // double precision filter
+  // pack and rescale output to 16 bit range
+  const std::vector<int32_t> &taps() { return f_buf; };  // get filter taps
 
  protected:
-  CircularBuffer<myriota_complex_16> a;
   std::vector<int32_t> f_buf;
   inline int32_t f(int64_t n) const { return f_buf[n - gmin]; };
+};
+
+// Resample 16-bit first point input sequence, "avoids" integer division at
+// the expense of possible increased clipping for 16-bit inputs taking values
+// near the maximum +-2^15.
+class Resample16shift : public Resample16 {
+ public:
+  const int s;  // shift
+  Resample16shift(double in_rate, double out_rate, double W = 30)
+      : Resample16(in_rate, out_rate, W), s(floor(log2(alpha))){};
+  myriota_complex_16 operator()(int64_t n) const override;
 };
 
 // Returns int x modulo int y, i.e., the coset representative from

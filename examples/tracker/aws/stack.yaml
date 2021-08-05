@@ -1,0 +1,123 @@
+# Copyright (c) 2021, Myriota Pty Ltd, All Rights Reserved
+# SPDX-License-Identifier: BSD-3-Clause-Attribution
+#
+# This file is licensed under the BSD with attribution  (the "License"); you
+# may not use these files except in compliance with the License.
+#
+# You may obtain a copy of the License here:
+# LICENSE-BSD-3-Clause-Attribution.txt and at
+# https://spdx.org/licenses/BSD-3-Clause-Attribution.html
+#
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+Parameters:
+  MyriotaAccountId:
+    Description: Myriota's Account Id
+    Type: String
+    Default: 655936322620
+
+Outputs:
+  FunctionARN:
+    Description: Lambda function to unpack messages
+    Value: !GetAtt MessageUnpacker.Arn
+
+  RoleARN:
+    Description: Role to be assumed by Myriota in order to invoke the lambda function
+    Value: !GetAtt MyriotaRole.Arn
+
+Resources:
+  # Lambda function that unpacks the location, sequence number and timestamp from a message and saves it to DynamoDB
+  MessageUnpacker:
+    Type: AWS::Lambda::Function
+    Properties:
+      Role: !GetAtt MessageUnpackerRole.Arn
+      Runtime: python3.8
+      Handler: index.handler
+      Timeout: 60
+      Environment:
+        Variables:
+          message_table: !Ref MessageTable
+      Code:
+        ZipFile: |
+          import os
+          import struct
+          import boto3
+          import json
+          from decimal import Decimal
+
+          def unpack(packet, module_id, env):
+            message_table = (boto3.resource("dynamodb").Table(env["message_table"]))
+            num, lat, lon, timestamp = struct.unpack("<HiiI", bytearray.fromhex(packet[0:28]))
+            message_table.put_item(
+              Item={
+                "ModuleId": module_id,
+                "Timestamp": timestamp,
+                "Latitude": Decimal(str(lat / 1e7)),
+                "Longitude": Decimal(str(lon / 1e7)),
+                "SequenceNumber": num,
+              }
+            )
+
+          def handler(event, context):
+            env = {
+              "message_table": os.environ.get("message_table")
+            }
+            module_id = json.loads(event["Data"])["Packets"][0]["TerminalId"]
+            packet = json.loads(event["Data"])["Packets"][0]["Value"]
+            unpack(packet, module_id, env)
+
+  MessageUnpackerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: dynamodb:PutItem
+                Resource: !GetAtt MessageTable.Arn
+
+  # IAM Role that allows the Myriota Cloud to securely invoke the lambda
+  MyriotaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS: !Sub arn:aws:iam::${MyriotaAccountId}:root
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${MessageUnpacker}
+
+  MessageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: ModuleId
+          AttributeType: S
+        - AttributeName: Timestamp
+          AttributeType: N
+      KeySchema:
+        - KeyType: HASH
+          AttributeName: ModuleId
+        - KeyType: RANGE
+          AttributeName: Timestamp
+      BillingMode: PAY_PER_REQUEST

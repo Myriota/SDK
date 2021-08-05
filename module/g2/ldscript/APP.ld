@@ -97,7 +97,7 @@ SECTIONS
 
   __etext = .;
 
-  .data : AT (__etext)
+  .data :
   {
     __data_start__ = .;
     *(vtable)
@@ -131,7 +131,7 @@ SECTIONS
     /* All data end */
     __data_end__ = .;
 
-  } > RAM
+  } > RAM AT > FLASH
 
   .bss (NOLOAD):
   {

@@ -49,7 +49,7 @@ def do_inject(idtoken, moduleid):
                     )
                     response.raise_for_status()
                 except requests.exceptions.RequestException as e:
-                    raise SystemExit(e)
+                    raise SystemExit(e.response.json())
             line = ""
 
 
