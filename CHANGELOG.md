@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.5.3
+
+Improvements:
+
+- Adds SDK APIs to save user data in [persistent storage](examples/nvram/README.md)
+- Adds SDK API `RxStatsGet` to get [downlink stats](examples/rf_test/rx_packet/README.md)
+- Improves the support of network performance tuning via network information
+- Improves the Sense&Locate [example](examples/snl) to simplify sensor testing
+- Adds permission for logging to unpacker example for the [tracker example application](examples/tracker/aws)
+- Adds support for macOS installation
+- Improves the accuracy of the GNSS fix when the device is moving
+- Adds an option to `mergy_binary.py` tool to extract individual raw files from a merged file
+- Stops printing satellite IDs to the debug output
+- Removes obsolete functions from the math folder
+
+Fixes:
+
+- Corrects rare event causing module to reset during satellite prediction
+
 ## 1.5.2
 
 API changes:
@@ -13,9 +32,9 @@ Improvements:
   - the user application can fully utilise the 34k-byte flash memory allocated to it
   - network information and user application can be updated individually during development and manufacturing
 - Adds `merge_binary.py` tool to merge multiple firmware files into one
-    - multiple different types of files can be merged into one and updated by `updater.py` with `-m` option
-    - file contents are CRC checked to detect corruption
-    - the network information and the user application are merged together by default and can be updated by either `-u` for backward compatibility or `-m`
+  - multiple different types of files can be merged into one and updated by `updater.py` with `-m` option
+  - file contents are CRC checked to detect corruption
+  - the network information and the user application are merged together by default and can be updated by either `-u` for backward compatibility or `-m`
 - Adds support to print memory usages when building the user application
 - Improves `message_inject.py` error handling when the module ID specified does not exist
 - Adds CloudFormation template of an AWS lambda for the tracker example application

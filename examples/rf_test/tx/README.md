@@ -16,7 +16,7 @@ The module current draws peak when transmitting. The board design should be able
 RF TX test to used to check if the connectivity of RF path is good and specifically the antenna has been connected.
 If there is no connectivity issue and the antenna/matching circuit has been tuned properly, the TX current draw should similar to what is described in the datasheet.
 The TX power can be checked as well to verify the connectivity. Since the signal is attenuated over the air, the signal strength won't be as strong.
-If equipment like spectrum analyser is not available, the satellite simulator USB dongle can be repurposed for coarse measurement. Multiple free [software](https://www.rtl-sdr.com/big-list-rtl-sdr-supported-software) for both Windows and Linux/OSX can be used for the measurement.
+If equipment like spectrum analyser is not available, the satellite simulator USB dongle can be repurposed for coarse measurement. Multiple free [software](https://www.rtl-sdr.com/big-list-rtl-sdr-supported-software) for both Windows and Linux/macOS can be used for the measurement.
 Contact support@myriota.com if further information is required.
 Both TX and RX paths can be checked. Antenna selection logic may need to be adjusted if different antennas for TX and RX are being used. When checking RX path of VHF(M1-24) modules, the TX power will be significant lower.
 

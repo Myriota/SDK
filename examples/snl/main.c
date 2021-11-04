@@ -18,13 +18,15 @@
 
 #include "myriota_user_api.h"
 
-#define SHUNT_RESISTANCE 100  // ohm
-#define LED_DELAY 200         // ms
+#define VIBRATION_SENSOR_ENABLED false  // true to enable vibration sensor
+
+#define LED_DELAY 200              // ms
+#define SHUNT_RESISTANCE 100       // ohm
+#define SENSOR_TOLERANCE 0.1f      // +-10%
+#define SENSOR_TEST_INTERVAL 5000  // ms
 
 const static uint8_t ButtonGPIO = PIN_GPIO0_WKUP;
 const static uint8_t VibrationGPIO = PIN_GPIO1_WKUP;
-
-#define VIBRATION_SENSOR_ENABLED false  // true to enable vibration sensor
 
 // Format of the messages to be transmitted. Values are little endian
 typedef struct {
@@ -43,9 +45,18 @@ enum {
   ADC_PRESSURE_SENSOR = PIN_ADC0,
   // Modify this delay to save power based on sensor stabilisation time
   DELAY_MS_21V_STABILISE = 1500,
-  // Message sending period
-  MESSAGE_PERIOD_HOURS = 8
+  // Message per day
+  MESSAGE_PER_DAY = 3
 };
+
+static void LedBlink(uint8_t count) {
+  for (uint8_t i = 0; i < count; i++) {
+    LedTurnOn();
+    Delay(LED_DELAY);
+    LedTurnOff();
+    if (i < count - 1) Delay(LED_DELAY);
+  }
+}
 
 static int ReadSensor(uint32_t *value) {
   int result;
@@ -56,7 +67,7 @@ static int ReadSensor(uint32_t *value) {
   result = ADCGetVoltage(PIN_ADC0, ADC_REF_2V5, value);
   if (result != 0) printf("Error reading sensor: %i", result);
 
-  GPIOSetLow(GPIO_4_20_ENABLE);  // Disable 21V supply
+  GPIOSetLow(GPIO_4_20_ENABLE);
 
   return result;
 }
@@ -74,11 +85,29 @@ static uint32_t MeasureCurrent() {
   return ua;
 }
 
+static void DisplaySensorResult(uint32_t current) {
+  if (current < 4000 * (1 - SENSOR_TOLERANCE) ||
+      current > 20000 * (1 + SENSOR_TOLERANCE)) {
+    if (current < 200) {
+      printf("Sensor disconnected\n");
+      LedBlink(3);
+    } else {
+      printf("Sensor reading out of range\n");
+      LedBlink(2);
+    }
+  } else {
+    printf("Sensor reading OK\n");
+    LedBlink(1);
+  }
+}
+
 static time_t SendMessage(void) {
   static uint16_t sequence_number = 0;
   int32_t lat, lon;
-  time_t timestamp;
+  time_t timestamp, next_schedule;
   uint32_t current;
+
+  next_schedule = TimeGet() + 24 * 3600 / MESSAGE_PER_DAY;
 
   if (GNSSFix()) printf("Failed to get GNSS Fix, using last known fix\n");
   LocationGet(&lat, &lon, &timestamp);
@@ -94,12 +123,12 @@ static time_t SendMessage(void) {
 
   sequence_number++;
 
-  return HoursFromNow(MESSAGE_PERIOD_HOURS);
+  return next_schedule;
 }
 
 static time_t RunsOnGPIOWakeup() {
   if (GPIOGet(ButtonGPIO) == GPIO_HIGH) {
-    printf("Woken up by button at %u\n", (unsigned int)TimeGet());
+    DisplaySensorResult(MeasureCurrent());
   }
 
   if (VIBRATION_SENSOR_ENABLED && GPIOGet(VibrationGPIO) == GPIO_LOW) {
@@ -115,23 +144,41 @@ void AppInit() {
     GPIOSetWakeupLevel(VibrationGPIO, GPIO_LOW);
   }
 
-  GPIOSetModeInput(ButtonGPIO, GPIO_PULL_DOWN);
-  GPIOSetWakeupLevel(ButtonGPIO, GPIO_HIGH);
-
   ScheduleJob(RunsOnGPIOWakeup, OnGPIOWakeup());
   ScheduleJob(SendMessage, ASAP());
 }
 
 int BoardStart(void) {
-  // Make sure 4-20mA circuit is disabled by default
   GPIOSetModeOutput(GPIO_4_20_ENABLE);
   GPIOSetLow(GPIO_4_20_ENABLE);
 
-  LedTurnOn();
-  Delay(LED_DELAY);
-  LedTurnOff();
+  GPIOSetModeInput(ButtonGPIO, GPIO_PULL_DOWN);
+  GPIOSetWakeupLevel(ButtonGPIO, GPIO_HIGH);
 
-  printf("Myriota sense and locate example\n");
+  printf("Myriota sense and locate example, %d messages per day\n",
+         MESSAGE_PER_DAY);
+  printf("Module ID: %s\n", ModuleIDGet());
+  printf("Registration code: %s\n", RegistrationCodeGet());
+
+  if (GPIOGet(ButtonGPIO) == GPIO_HIGH) {
+    bool button_hold = true;
+    for (uint8_t i = 0; i < 10; i++) {
+      Delay(100);
+      if (GPIOGet(ButtonGPIO) == GPIO_LOW) {
+        button_hold = false;
+        break;
+      }
+    }
+    if (button_hold) {
+      printf("Sensor test mode, reset to exit...\n");
+      while (1) {
+        DisplaySensorResult(MeasureCurrent());
+        Delay(SENSOR_TEST_INTERVAL);
+      }
+    }
+  } else {
+    DisplaySensorResult(MeasureCurrent());
+  }
 
   return 0;
 }

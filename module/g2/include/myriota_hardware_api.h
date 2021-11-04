@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2021, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -257,6 +257,38 @@ void RFTestRxStop(void);
 
 /// @}
 
+/// @defgroup RF_Stats Satellite radio statistics
+/// @{
+
+/// Rx stats type
+typedef struct {
+  uint16_t attempts;    ///< Number of attempts made to receive a packet
+  uint16_t unverified;  ///< Number of packets failed signature verification
+  uint16_t verified;    ///< Number of successful packets
+} RxStats_t;
+
+/// Get satellite radio receiver (downlink) statistics
+void RxStatsGet(void *Stats);
+
+/// @}
+
+/// @defgroup User_NVRAM User NVRAM (persistent storage)
+/// @{
+
+#define NVRAM_MEM_SIZE 2048
+/// @cond
+#define NVRAM_MEM __attribute__((section("user_nvram"))) volatile const
+/// @endcond
+
+/// Clear the NVRAM. NVRAM should be cleared before overwriting the exsitng
+/// contents. The NVRAM is filled with 0xFF after being cleared.
+void NvramClear();
+/// Write buffer contents to NVRAM, starting from offset.
+/// Returns 0 if succeeded and -1 if failed.
+int NvramWrite(uint32_t Offset, const uint8_t *Buf, size_t Length);
+
+/// @}
+///
 /// @}
 
 #ifdef __cplusplus

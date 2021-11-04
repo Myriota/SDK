@@ -59,9 +59,8 @@ def calc_crc(data):
     return crc
 
 
-def list_file(filename):
+def list_extract_file(filename, outfile_name=None, type=None):
     try:
-        print("List files from", filename, "\n")
         with open(filename, "rb") as input_file:
             totalsize = os.stat(filename).st_size
             if totalsize <= header_length:
@@ -71,17 +70,13 @@ def list_file(filename):
             offset = filenumber = 0
             while offset < totalsize:
                 filenumber += 1
-                print("------- File", filenumber, "-------")
                 input_file.seek(2, os.SEEK_CUR)
                 ftype = struct.unpack("<H", input_file.read(2))[0]
                 if not ftype in file_types:
                     sys.stderr.write("File type error\n")
                     sys.exit(1)
-                print("Type  :", file_types.get(ftype))
 
                 flen = struct.unpack("<I", input_file.read(4))[0]
-                print("Size  :", flen, "bytes", "\n")
-
                 reserved = struct.unpack("<I", input_file.read(4))[0]
                 reserved = struct.unpack("<H", input_file.read(2))[0]
                 checksum = struct.unpack("<H", input_file.read(2))[0]
@@ -92,9 +87,24 @@ def list_file(filename):
                 if checksum != (calc_crc(data) & 0xFFFF):
                     sys.stderr.write("Failed to verify file\n")
                     sys.exit(1)
+                if outfile_name:
+                    if ftype == type:
+                        with open(outfile_name, "wb") as output_file:
+                            print(
+                                "Extracting %s, saving to %s."
+                                % (file_types.get(type), outfile_name)
+                            )
+                            output_file.write(data[16:])
+                            output_file.close()
+                        return
+                else:
+                    print("------- File", filenumber, "-------")
+                    print("Type  :", file_types.get(ftype))
+                    print("Size  :", flen, "bytes", "\n")
 
                 offset += header_length + flen
-
+            if outfile_name:
+                print("No %s found!" % file_types.get(type))
     except IOError:
         sys.stderr.write("\nCan't open %s\n" % filename)
         sys.exit(1)
@@ -149,54 +159,66 @@ def main():
         pass
 
     parser = argparse.ArgumentParser(
-        description="Merge multiple files to program Myriota module",
+        description="Merge multiple files to program the Myriota module or extract files from the merged file",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        "-l",
-        "--list_contents",
-        dest="file_to_list",
-        metavar="FILE",
-        help="list contents in a merged file",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        dest="merged_file",
-        metavar="FILE",
-        help="output of merge file",
     )
     parser.add_argument(
         "-f",
         "--system_file",
         dest="system_filename",
         metavar="FILE",
-        help="system image binary file to be merged",
+        help="system image binary file to be merged or extract to",
     )
     parser.add_argument(
         "-u",
         "--application_file",
         dest="application_filename",
         metavar="FILE",
-        help="applicaiton binary file to be merged",
+        help="applicaiton binary file to be merged or extract to",
     )
     parser.add_argument(
         "-n",
         "--network_info_file",
         dest="network_info_filename",
         metavar="FILE",
-        help="network information binary file to be merged",
+        help="network information binary file to be merged or extract to",
     )
-
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "-x",
+        "--extract",
+        dest="file_to_extract",
+        metavar="FILE",
+        help="the merged file to extract files from",
+    )
+    group.add_argument(
+        "-o",
+        "--output",
+        dest="merged_file",
+        metavar="FILE",
+        help="output of merge file",
+    )
+    group.add_argument(
+        "-l",
+        "--list_contents",
+        dest="file_to_list",
+        metavar="FILE",
+        help="list contents in a merged file",
+    )
     args = parser.parse_args()
 
     if args.file_to_list:
-        list_file(args.file_to_list)
+        list_extract_file(args.file_to_list)
 
-    if args.system_filename or args.application_filename or args.network_info_filename:
-        if not args.merged_file:
-            sys.stderr.write("Please specify the output filename\n")
-            sys.exit(1)
+    if args.file_to_extract:
+        if args.system_filename:
+            list_extract_file(args.file_to_extract, args.system_filename, 1)
+        if args.application_filename:
+            list_extract_file(args.file_to_extract, args.application_filename, 2)
+        if args.network_info_filename:
+            list_extract_file(args.file_to_extract, args.network_info_filename, 3)
+
+    if args.merged_file:
         output_temp = tempfile.NamedTemporaryFile(mode="w+b")
         output_temp_filename = output_temp.name
         if args.system_filename:

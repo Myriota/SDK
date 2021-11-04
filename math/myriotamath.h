@@ -31,9 +31,6 @@
 extern "C" {
 #endif
 
-// The factional part of a number
-static inline double myriota_frac(double x) { return x - floor(x); }
-
 // The sign of x, zero if x is zero.
 static inline double myriota_signum(double x) { return (x > 0) - (x < 0); }
 
@@ -42,14 +39,6 @@ static inline double myriota_sqr(double x) { return x * x; }
 
 // Cube of x, i.e., x*x*x
 static inline double myriota_cub(double x) { return x * x * x; }
-
-// Floating point x mod y
-double myriota_modulus(const double x, const double y);
-
-//  x mod 2pi into the interval [0, 2pi]
-static inline double myriota_mod_2pi(const double x) {
-  return myriota_modulus(x, 2 * pi);
-}
 
 // Returns smallest power of 2 greater than or equal to this integer
 unsigned int myriota_greater_power_of_two(unsigned int x);
@@ -149,32 +138,6 @@ int myriota_n_zbase32_to_buf(const char *s, const size_t n, void *buf);
 // Returns number of zbase32 characters written.
 int myriota_buf_to_zbase32(const void *buf, const size_t buf_size, char *s);
 
-// Returns the (centered) fractional part of x
-//
-// This is x minus the nearest integer to x. Equivalently
-// the cosest representative of x from [-0.5,0.5) of the
-// quotient group R/Z.
-static inline double myriota_fracpart(double x) { return x - round(x); }
-
-// Returns x rounded to the nearest multiple of s
-static inline double myriota_round_scaled(double x, double s) {
-  return s * round(x / s);
-}
-
-// Returns x rounded to the nearest number of the form ks + t where k is an
-// integer
-static inline double myriota_round_scaled_affine(double x, double s, double t) {
-  return myriota_round_scaled(x - t, s) + t;
-}
-
-// Returns x modulo s into the interval [-s/2,s/2)
-//
-// Equivalently the cosest representative of x from [-s/2,s/2) of the
-// quotient group R/sZ.
-static inline double myriota_fracpart_scaled(double x, double s) {
-  return x - myriota_round_scaled(x, s);
-}
-
 static inline double degrees_to_radians(const double x) { return x * pi / 180; }
 
 static inline double radians_to_degrees(const double x) { return x * 180 / pi; }
@@ -184,52 +147,6 @@ static inline int myriota_int_min(int a, int b) { return a < b ? a : b; }
 
 // maximum of two integers
 static inline int myriota_int_max(int a, int b) { return a > b ? a : b; }
-
-// return -1 if -INFINITY or 1 if INFINITY, 0 otherwise
-// Created to circumvent C99 vs C++11 isinf() differences.
-static inline int myriota_isinf(double f) {
-  if (f == -INFINITY) return -1;
-  if (f == INFINITY) return 1;
-  return 0;
-}
-
-// True if array a is in strictly ascending order
-bool myriota_is_strictly_ascending(const int *a, const int size);
-
-// returns minimum element of a vector of integers.
-// returns INT_MAX if the vector is empty
-int myriota_int_array_min(const int *S, unsigned int numS);
-
-// returns maximum element of a vector of integers.
-// returns INT_MIN if the vector is empty
-int myriota_int_array_max(const int *S, unsigned int numS);
-
-// returns the index of the minimum element of a vector of integers.
-// returns INT_MAX if the vector is empty
-int myriota_int_array_arg_min(const int *S, unsigned int numS);
-
-// returns the index of the maximum element of a vector of integers.
-// returns INT_MIN if the vector is empty
-int myriota_int_array_arg_max(const int *S, unsigned int numS);
-
-// Returns x modulo y, i.e., the coset representative from
-// {0,1,...,y-1} of x from the group Z/y.
-//
-// Different from x % y when x is negative. This is not the same
-// as the remainder of x after division by y when x is negative
-int myriota_int_mod(int x, int y);
-long myriota_long_mod(long x, long y);
-int64_t myriota_int64_mod(int64_t x, int64_t y);
-
-// Ceiling after division of nonegative integer a by nonnegative integer b
-static inline unsigned int myriota_int_div_ceil(unsigned int a,
-                                                unsigned int b) {
-  return a / b + (a % b != 0);
-}
-static inline unsigned long myriota_long_div_ceil(unsigned long a,
-                                                  unsigned long b) {
-  return a / b + (a % b != 0);
-}
 
 // Number uniformly distributed on the interval [0,1]
 static inline double myriota_random_uniform() {
@@ -288,83 +205,6 @@ void myriota_best_approximations(double x, unsigned int size,
 myriota_rational myriota_rational_approximation(double x, double tol, int qmax,
                                                 unsigned int k);
 
-// Search for a zero of the function f(x) in the interval [a, b]. Finds a
-// solution x such that |x0 - x| < tol where f(x0) = 0. Uses the bisection
-// method, only guaranteed to converge if there is a unique zero between a and
-// b and f is continuous and sign(f(a)) = -sign(f(b))
-//
-// Example usage:
-//
-// double cubic_func(double x, void* d) { return x * x * (x - 1); }
-// double x = myriota_bisection(cubic_func, NULL, 0.5, 1.7, 1e-7, 100);
-//  x will be 1.
-double myriota_bisection(double (*f)(double, void *), void *fdata,
-                         const double ax, const double bx, const double tol);
-
-// Finds x such that f(x) = y.
-// Uses the bisection method internally.
-// The solution must lie within the interval (ax, bx).
-double myriota_solve(double (*f)(double, void *), void *fdata, const double y,
-                     const double ax, const double bx, const double tol);
-
-// Performs a 1-dimensional minimization of the function f by ternary search.
-// Returns number x on interval [a,b] that locally minimises f(x,fdata).
-double myriota_minimise(double (*f)(double, void *), void *fdata,
-                        const double a, const double b, const double tol);
-
-// integrate the function f from a to infinity using the substitution x = a +
-// (t/(1-t)) and N steps
-double myriota_integrate_infty(double (*f)(double, void *), void *fdata,
-                               const double a, const int N);
-
-// A function for unwrapping a phase wrapped sequence
-// Phase is assumed to reside in the interval [-pi, pi].
-//
-// This will only work reliably on relatively clean (not much noise) phase
-// signals sampled considerably above the Nyquist rate.
-//
-// The initial previous_value should be zero. Given x the
-// unwrapped sequence y is obtained as follows.
-//
-// y[0] = myriota_unwrap(x[0], 0);
-// y[1] = myriota_unwrap(x[1], y[0]);
-// y[2] = myriota_unwrap(x[2], y[1]);
-// y[3] = myriota_unwrap(x[3], y[2]);
-//
-// etc. Or in a forloop.
-//
-// y[0] = myriota_unwrap(x[0], 0);
-// for(int n = 1; n < N; n++ )
-//    y[n] =  myriota_unwrap(x[n], y[n-1]);
-double myriota_unwrap(const double value, const double previous_value);
-
-// Circularly rotate array of integers to the right n times.
-// Modifies input array inplace. The array has the size specified by the size
-// argument.
-//
-// Example usage:
-// int N = 4;
-// int array[4] = {1,2,3,4};
-// myriota_rotate(array, N, 1);
-// // array is now {2,3,4,1}
-void myriota_rotate(int *array, int size, int n);
-
-// Generates an m-sequence of length 2^N-1.
-// Returns sequence into argument r
-//
-// Example Usage:
-// int N = 3;
-// int M = (1<<N)-1; //M = 2^N-1
-// int r[M];
-// myriota_msequence(N, r);
-// r is now {1,1,0,0,1,0,1}
-void myriota_msequence(const int N, int *r);
-
-// Like the standard qsort but also removes duplicates. Returns the number of
-// unique elements.
-int myriota_sort_unique(void *base, size_t nitems, size_t size,
-                        int (*compar)(const void *, const void *));
-
 // Complex 16 bit fixed point type
 typedef struct {
   int16_t re;
@@ -410,8 +250,8 @@ typedef std::complex<double> complex;
 template <typename T>
 class CircularBuffer {
  public:
-  const unsigned int size;
-  const unsigned int mask;
+  unsigned int size;
+  unsigned int mask;
 
   // Creates a circular buffer and initialises all
   // entries to init parameter.
@@ -419,6 +259,13 @@ class CircularBuffer {
       : size(myriota_greater_power_of_two(size + 1)),
         mask(this->size - 1),
         buf(this->size, init),
+        N(0){};
+
+  // Copy constructor (only works with default initialisation)
+  CircularBuffer(const CircularBuffer &b)
+      : size(myriota_greater_power_of_two(b.size + 1)),
+        mask(b.size - 1),
+        buf(b.size, T()),
         N(0){};
 
   // Write/push an element to the end of the buffer
@@ -449,7 +296,7 @@ class CircularBuffer {
  protected:
   std::vector<T> buf;
   uint64_t N;
-};
+};  // namespace myriota
 
 template <typename T>
 class Resample {

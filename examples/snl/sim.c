@@ -17,6 +17,8 @@
 #include <signal.h>
 #include "myriota_user_api.h"
 
+static const uint32_t voltage_list[6] = {19, 20, 359, 360, 2200, 2201};
+
 static uint8_t pin_state = GPIO_LOW;  // Current pin state
 
 int GPIOSetHigh(uint8_t PinNum) { return 0; }
@@ -36,7 +38,9 @@ void LedTurnOff(void) {}
 int GPIOGet(uint8_t PinNum) { return pin_state; }
 
 int ADCGetVoltage(uint8_t PinNum, ADCReference Reference, uint32_t *mV) {
-  *mV = 585;
+  static uint8_t i = 0;
+  *mV = voltage_list[i++];
+  if (i > 5) i = 0;
   return 0;
 }
 

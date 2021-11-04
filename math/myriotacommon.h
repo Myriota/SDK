@@ -30,6 +30,7 @@
 #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2 * !!(condition)]))
 #endif
 
+// size in bytes of a member of a structure
 #define field_size(type, member) sizeof(((type *)0)->member)
 
 // Get number of element in an array
