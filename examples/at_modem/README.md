@@ -211,10 +211,10 @@ This can be done by setting `GNSS_COMM_TEST_ONLY` to `false` in `hardware_test.c
 
 ### Radio TX
 
-This test can be used to do TX power, TX current draw and TX/RX path connectivity checks. More information can be found in the [readme file](https://github.com/Myriota/SDK/blob/master/examples/rf_test/tx/README) of RF TX test example.
+This test can be used to do TX power, TX current draw and TX/RX path connectivity checks. More information can be found in the [readme file](https://github.com/Myriota/SDK/blob/master/examples/rf_test/tx/README.md) of RF TX test example.
 
 ### Radio RX
 
-This test can be used to check the RX path. More information can be found in the [readme file](https://github.com/Myriota/SDK/blob/master/examples/rf_test/rx/README) of RF RX test example.
+This test can be used to check the RX path. More information can be found in the [readme file](https://github.com/Myriota/SDK/blob/master/examples/rf_test/rx/README.md) of RF RX test example.
 
 Test results are output to both modem communication interface and serial debug interface.
