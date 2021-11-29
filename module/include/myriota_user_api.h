@@ -158,7 +158,7 @@ void TimeSet(time_t Time);
 /// @defgroup Temp_sensor Temperature sensor
 /// @{
 
-/// Get on board temperature in degrees Celsius
+/// Get the temperature inside the module in degrees Celsius
 /// Returns 0 if succeeded and -1 if failed
 int TemperatureGet(float *Temperature);
 
