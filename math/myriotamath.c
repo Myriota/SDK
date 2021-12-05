@@ -259,8 +259,10 @@ double myriota_continued_fraction(double x, unsigned int size, int *a) {
 }
 
 long long gcd(long long a, long long b) {
-  if (b == 0) return abs(a);
-  return gcd(abs(b), abs(a) % abs(b));
+  long long aa = llabs(a);
+  long long ab = llabs(b);
+  if (b == 0) return aa;
+  return gcd(ab, aa % ab);
 }
 
 myriota_rational make_myriota_rational(long long a, long long b) {
@@ -307,7 +309,7 @@ myriota_rational myriota_rational_approximation(double x, double tol, int qmax,
   if (fabs(x * r[0].q - r[0].p) < fabs(r[0].q * tol)) return r[0];
   for (int i = 1; i < k; i++) {
     // printf(" %d/%d ", r[i].p, r[i].q);
-    if (abs(r[i].q) > qmax) return r[i - 1];
+    if (llabs(r[i].q) > qmax) return r[i - 1];
     if (fabs(x * r[i].q - r[i].p) < fabs(r[i].q * tol)) return r[i];
   }
   return r[k - 1];
