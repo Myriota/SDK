@@ -60,6 +60,10 @@ class SatelliteSimulator(object):
         self.chunk_duration = chunk_duration
         self.chunk_size = int(self.chunk_duration * self.down_rate * 4)
 
+        # manipulate the capture time
+        self.start_time = 0
+        self.first_capture_time = 0
+
         # tools convert_type and resample assumed to reside in current folder
         os.environ["PATH"] += os.pathsep + os.getcwd()
 
@@ -190,7 +194,13 @@ class SatelliteSimulator(object):
         upload.raise_for_status()
 
     def get_time(self):
-        return time.time()
+        if self.start_time == 0:
+            return time.time()
+        else:
+            if self.first_capture_time == 0:
+                self.first_capture_time = time.time() - self.chunk_duration
+            return_time = self.start_time + time.time() - self.first_capture_time
+            return return_time
 
     def upload_url(self):
         """
@@ -253,6 +263,13 @@ if __name__ == "__main__":
         "-f", "--frequency", type=float, default=434e6, help="Capture frequency."
     )
     parser.add_argument("-g", "--gain", type=float, default=33.8, help="Capture gain.")
+    parser.add_argument(
+        "-t",
+        "--start_time",
+        type=int,
+        default=0,
+        help="Start timestamp of capture.",
+    )
 
     args = parser.parse_args()
 
@@ -260,6 +277,15 @@ if __name__ == "__main__":
     try:
         simulator.check_dongle()
         simulator.login()
+
+        simulator.start_time = args.start_time
+        # capture wider band for real packets
+        if not args.frequency == 434e6:
+            simulator.down_rate = 28125
+            simulator.chunk_size = int(
+                simulator.chunk_duration * simulator.down_rate * 4
+            )
+
         capture = simulator.start_capture(
             capture_frequency=args.frequency,
             capture_gain=args.gain,

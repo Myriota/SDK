@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2022, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -211,6 +211,38 @@ void SuspendModeEnable(bool Enable);
 
 /// Returns true if suspend mode is enabled and false if disabled.
 bool SuspendModeIsEnabled(void);
+
+/// @}
+
+/// @defgroup Update network info.
+/// Interface for user to perform system update, i.e Network information. This
+/// is done in two steps: The first step is to transfter the content the
+/// internal storage, in one or multiple steps. The second step is to validate
+/// the content and perform requried system update from the internal storage.
+/// It is recommended that the entire update process done in a single task
+/// window.
+/// @{
+
+/// System update IDs
+enum SystemUpdateID { SYSTEM_UPDATE_ID_NETWORK = 0 };
+
+/// Initiate a system update request, with update id, size, and maximum
+/// time in seconds for the entire update. Update will be cancelled
+/// automatically when the \p Timeout expires.
+/// Returns 0 if the update starts successfully and -1 if \p ID is unknown, \p
+/// Size is too big or there is an ongoing update.
+int SystemUpdateStart(uint8_t ID, uint32_t Size, uint32_t Timeout);
+
+/// Transfer the content to the module. For best speed performance, it
+/// is recommended that \p Offset and \p BufSize are set to multiple of 2048
+/// bytes where possible.
+/// Returns 0 if the transfer succeeds and -1 if it fails.
+int SystemUpdateXfer(uint32_t Offset, const uint8_t *Buf, size_t BufSize);
+
+/// Indicates the finish of the content transfer and perform the system update.
+/// Update will only be performed if content validation is successful.
+/// Returns 0 if update succeeds and -1 if the validation fails.
+int SystemUpdateFinish(void);
 
 /// @}
 

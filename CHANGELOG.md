@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.5
+
+Fixes:
+
+- Fixes an issue where the wakeup capability of both GPIOs is disabled when `GPIODisableWakeup` is called
+- Fixes an issue in `RFTestTxStop` hardware API where LED won't be turned off when the test stops
+- Fixes an issue in the RSSI test of the `rf_test` example where the BSP antenna selection logic is not been used properly
+- Fixes an issue in the makefile of `i2c_spi` example where SPI mode binary cannot be built
+- Fixes an issue where unnecessary diagnostic messages are generated when specific network information is received via downlink
+
+Improvements:
+
+- Adds APIs to update the network information in the user application
+- Significantly reduces the startup time after programming the user application or network information
+- Reduces the wakeup time when neither LEUART nor pulse counter is enabled
+- Avoids potential current leak from GNSS UART1_RX pin in deep sleep
+- Increases user job watchdog timeout time from 6 minutes to 15 minutes
+
 ## 1.5.4
 
 Improvements:
@@ -7,7 +25,7 @@ Improvements:
 - Optimises TX scheduling to improve TX performance
 - Adds support of applying TX calibration table in the module to tune the TX power and current draw
 - Clarifies temperature sensor readings in the comment/document
-
+- Improves satellite simulator to capture non-real-time packets
 Fixes:
 
 - Corrects module TX frequency selection error which reduces the message success rate

@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2022, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -12,13 +12,7 @@
 # limitations under the License.
 
 
-USING_I2C ?= 1# Change to 0 to use SPI
-
-ifeq ($(USING_I2C), 1)
-PROGRAM_NAME = LIS3DH_i2c
-else
-PROGRAM_NAME = LIS3DH_spi
-endif
+PROGRAM_NAME = network_update
 
 ROOTDIR ?= $(abspath ../..)
 
@@ -31,6 +25,3 @@ else
 endif
 
 include $(ROOTDIR)/module/app.mk
-ifeq ($(USING_I2C), 1)
-	CFLAGS+=-DUSING_I2C
-endif

@@ -61,12 +61,12 @@ int main(int argc, char **argv) {
 
   if (cmd_parser.exist("taps")) {
     Resample16shift r = Resample16shift(in_rate, out_rate, W);
-    printf("alpha = %d\n", r.alpha);
-    printf("s = %d\n", r.s);
     const char *name = cmd_parser.get<std::string>("taps").c_str();
-    printf("integer %s[0:%u];\n", name, (unsigned int)(r.taps().size() - 1));
+    printf("reg signed [15:0] %s [0:%d];\n", name, (int)(r.taps().size() - 1));
+    printf("initial begin\n");
     for (unsigned int i = 0; i < r.taps().size(); i++)
-      printf("assign %s[%u] = %d;\n", name, i, r.taps()[i]);
+      printf("%s[%d] = %d;\n", name, i, r.taps()[i]);
+    printf("end\n");
     return EXIT_SUCCESS;
   }
 

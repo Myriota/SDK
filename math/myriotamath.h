@@ -217,6 +217,12 @@ typedef struct {
   int32_t im;
 } myriota_complex_32;
 
+// Complex 64 bit fixed point type
+typedef struct {
+  int64_t re;
+  int64_t im;
+} myriota_complex_64;
+
 // Clip signed 32 bit integer into interval [-2^15, 2^15)
 static inline int16_t myriota_clip_16(const int32_t x) {
   if (x > (1 << 15) - 1) return (1 << 15) - 1;
