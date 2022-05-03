@@ -214,34 +214,44 @@ bool SuspendModeIsEnabled(void);
 
 /// @}
 
-/// @defgroup Update network info.
-/// Interface for user to perform system update, i.e Network information. This
-/// is done in two steps: The first step is to transfter the content the
-/// internal storage, in one or multiple steps. The second step is to validate
-/// the content and perform requried system update from the internal storage.
-/// It is recommended that the entire update process done in a single task
-/// window.
+/// @defgroup Update or get system information.
+/// Interface for user to update or retrieve selected system information. i.e.
+/// To update network information. It is recommended that the entire process
+/// done in a single task window.
 /// @{
 
-/// System update IDs
-enum SystemUpdateID { SYSTEM_UPDATE_ID_NETWORK = 0 };
+/// System update/get IDs
+enum SystemUpdateID {
+  SYSTEM_UPDATE_ID_WRITE_START = 0,
+  SYSTEM_UPDATE_ID_NETWORK = SYSTEM_UPDATE_ID_WRITE_START,
+  SYSTEM_GET_ID_START = (1 << 4),
+  SYSTEM_GET_ID_NETWORK = SYSTEM_GET_ID_START,
+  SYSTEM_GET_ID_DIAGNOSTICS
+};
 
-/// Initiate a system update request, with update id, size, and maximum
-/// time in seconds for the entire update. Update will be cancelled
-/// automatically when the \p Timeout expires.
-/// Returns 0 if the update starts successfully and -1 if \p ID is unknown, \p
-/// Size is too big or there is an ongoing update.
+/// Initiate a system update or get request, with id, size, and maximum
+/// time in seconds for the entire operation. Pass 0 to \p Size for get
+/// operation. Update or get will be cancelled automatically when the \p Timeout
+/// expires.
+/// For update operation: returns 0 if the update starts successfully
+/// and -1 if \p ID is unknown, \p Size is too big or there is an ongoing
+/// operation.
+/// For get operation: returns number of bytes to transfer if it starts
+/// successfully and -1 if \p ID is unknown, or there is an ongoing operation.
 int SystemUpdateStart(uint8_t ID, uint32_t Size, uint32_t Timeout);
 
-/// Transfer the content to the module. For best speed performance, it
-/// is recommended that \p Offset and \p BufSize are set to multiple of 2048
-/// bytes where possible.
-/// Returns 0 if the transfer succeeds and -1 if it fails.
-int SystemUpdateXfer(uint32_t Offset, const uint8_t *Buf, size_t BufSize);
+/// System update or get data transfer.
+/// For update operation: returns 0 if the transfer succeeds and -1 if it fails.
+/// For the best transfer speed, it is recommended that \p Offset and \p
+/// BufSize are set to multiple of 2048 bytes where possible.
+/// For get operation: returns the number of bytes written to \p Buf if the
+/// transfer succeeds and -1 if it fails.
+int SystemUpdateXfer(uint32_t Offset, uint8_t *Buf, size_t BufSize);
 
-/// Indicates the finish of the content transfer and perform the system update.
-/// Update will only be performed if content validation is successful.
-/// Returns 0 if update succeeds and -1 if the validation fails.
+/// Indicates the finish of the content transfer.
+/// For update operation, actual update will be
+/// performed if the transferred data are validated.
+/// Returns 0 on succeess and -1 on failure.
 int SystemUpdateFinish(void);
 
 /// @}

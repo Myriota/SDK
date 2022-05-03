@@ -12,9 +12,9 @@
 # limitations under the License.
 
 
-PROGRAM_NAME = network_update
+PROGRAM_NAME = networkinfo_get
 
-ROOTDIR ?= $(abspath ../..)
+ROOTDIR ?= $(abspath ../../..)
 
 APP_SRC = main.c
 

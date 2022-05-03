@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.6
+
+Improvements:
+  - Adds support to retrieve network information and diagnostics data from the module. The data can be uploaded to Myriota cloud for post-processing
+
 ## 1.5.5
 
 Fixes:

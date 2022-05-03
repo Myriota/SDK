@@ -1,0 +1,128 @@
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    NetworkInfo:
+      description: Network Information for upload
+      properties:
+        module_id:
+          description: Module ID that the network information relates to
+          title: Module Id
+          type: string
+        network_info:
+          description: Base64 encoded network information
+          title: Network Info
+          type: string
+      required:
+      - module_id
+      - network_info
+      title: NetworkInfo
+      type: object
+    UploadMessageRequest:
+      description: Message Content
+      properties:
+        message:
+          description: Encoded packet from a module to be processed by the Myriota
+            cloud, as a hex string
+          maxLength: 58
+          minLength: 58
+          pattern: ^[a-fA-F0-9]+$
+          title: Message
+          type: string
+        timestamp:
+          description: Optional timestamp of packet creation time in seconds since
+            unix epoch
+          exclusiveMaximum: 10000000000.0
+          exclusiveMinimum: 0.0
+          title: Timestamp
+          type: integer
+      required:
+      - message
+      title: UploadMessageRequest
+      type: object
+    ValidationError:
+      properties:
+        loc:
+          items:
+            type: string
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+info:
+  description: Uploads packets directly to Myriota's cloud
+  title: Packet Upload API
+  version: 0.1.0
+openapi: 3.0.2
+paths:
+  /network-info:
+    post:
+      description: Uploads network information retrieved from a module
+      operationId: network_info_upload_network_info_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkInfo'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Network Info Upload
+      tags:
+      - Network Information Upload
+  /packets:
+    post:
+      description: Uploads packets directly to Myriota's cloud
+      operationId: packet_upload_packets_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/UploadMessageRequest'
+              maxItems: 100
+              title: Messages
+              type: array
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Packet Upload
+      tags:
+      - Packet Upload

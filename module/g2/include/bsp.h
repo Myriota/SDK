@@ -40,7 +40,7 @@
 ///     - 1: get time only after location has been fixed or set
 ///     - 2: get time and do GNSS 2D fix
 ///     - 3: get time and do GNSS 3D fix; this is default mode
-///     - 4: skip system GNSS fix and intitial location is set to 0,0
+///     - 4: skip system GNSS fix and initial location is set to 0,0
 ///     - unset: the same as 3
 ///     .
 /// - DUMPTX (Deprecated, do not use)
@@ -68,7 +68,7 @@ char *BoardEnvGet(void);
 /// Returns 0 if succeeded and -1 if failed.
 int BoardInit(void);
 /// Initialise the board after the system hardware initialisation, invoked only
-/// once at startup. Can be overriden by your application code individually.
+/// once at startup. Can be overridden by your application code individually.
 /// Returns 0 if succeeded and -1 if failed.
 int BoardStart(void);
 
