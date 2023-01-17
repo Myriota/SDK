@@ -31,6 +31,7 @@ Improvements:
 - Adds support of applying TX calibration table in the module to tune the TX power and current draw
 - Clarifies temperature sensor readings in the comment/document
 - Improves satellite simulator to capture non-real-time packets
+
 Fixes:
 
 - Corrects module TX frequency selection error which reduces the message success rate
