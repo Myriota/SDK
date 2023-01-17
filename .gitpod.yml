@@ -1,4 +1,0 @@
-# List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
-tasks:
-  - init: curl -O https://static.myriota.com/gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2; sudo mkdir -p /opt/gcc-arm; sudo tar -xjvf gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2 -C /opt/gcc-arm --strip-components=1 # runs during prebuild
-    command: export PATH=$PATH:/opt/gcc-arm/bin
