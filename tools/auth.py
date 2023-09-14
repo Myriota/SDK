@@ -25,7 +25,6 @@ import hmac
 import os
 import re
 import requests
-import six
 import sys
 import threading
 import time
@@ -277,7 +276,6 @@ if __name__ == "__main__":
 
     try:
         if args.command == "login":
-
             authenticator.login(args.user)
             if args.request_token:
                 print(authenticator.refresh_token)
@@ -285,7 +283,6 @@ if __name__ == "__main__":
                 print(json.dumps(authenticator.tokens, indent=2))
 
         elif args.command == "refresh":
-
             tokens = authenticator.refresh(args.refresh_token)
             print(json.dumps(tokens, indent=2))
 

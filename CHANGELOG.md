@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.6-HOTFIX1
+
+Improvements:
+
+- Updates supported platforms to include Ubuntu 22.04
+- Adds option to use Github Codespace
+- Cleans up tools
+
 ## 1.5.6
 
 Improvements:

@@ -27,7 +27,41 @@ from io import BytesIO
 import signal
 import sys
 
-version = "1.1"
+
+version = "1.2"
+
+
+def reset_device():
+    port_number = 0
+    retry = 6
+    try:
+        import ftd2xx as ftd
+
+        while True:
+            try:
+                d = ftd.open(port_number)
+                if d.getDeviceInfo()["description"] == b"G2":
+                    break
+                d.close()
+                port_number += 1
+            except ftd.DeviceError:
+                if port_number == 0 and retry >= 0:
+                    time.sleep(0.5)
+                    retry -= 1
+                    continue
+                print("Please reset the device", end="")
+                return
+
+        print("Resetting Myriota device", end="")
+        d.setBitMode(0xF0, 0x20)  # set reset pin low
+        time.sleep(0.1)
+        d.setBitMode(0xF1, 0x20)  # set reset pin high
+        time.sleep(0.1)
+        d.setBitMode(0, 0x20)
+        d.close()
+    except (OSError, ImportError) as e:
+        print("Please reset the device", end="")
+        return
 
 
 def get_ports():
@@ -90,7 +124,7 @@ def wait_for_serial_port(portname, baudrate):
             pass
 
 
-def capture_bootloader(ser):
+def capture_bootloader(ser, port_name, br):
     # return straightaway if already in bootloader
     ser.reset_input_buffer()
     ser.write(b"U")
@@ -102,8 +136,13 @@ def capture_bootloader(ser):
     if b"Unknown" in out or b"Bootloader" in out:
         ser.readline()
         ser.readline()
-        return
-    print("Please reset the device", end="")
+        return ser
+    ser.close()
+
+    # reset Myriota device
+    reset_device()
+
+    ser = open_serial_port(port_name, br)
     sys.stdout.flush()
     ser.reset_input_buffer()
 
@@ -135,6 +174,7 @@ def capture_bootloader(ser):
         sys.stdout.flush()
 
     ser.reset_input_buffer()
+    return ser
 
 
 def _bytecrc(crc, poly, n):
@@ -633,25 +673,28 @@ def main():
         serial_port = open_serial_port(port_name, br)
 
     if args.get_id_flag:
-        capture_bootloader(serial_port)
+        serial_port = capture_bootloader(serial_port, port_name, br)
         get_id(serial_port)
         sys.exit(0)
 
     if args.get_regcode_flag:
-        capture_bootloader(serial_port)
+        serial_port = capture_bootloader(serial_port, port_name, br)
         get_regcode(serial_port)
         sys.exit(0)
 
     if args.get_version_flag:
-        capture_bootloader(serial_port)
+        serial_port = capture_bootloader(serial_port, port_name, br)
         get_version(serial_port)
         sys.exit(0)
 
     update_commands = []
     if args.system_image_name:
-        update_commands.append(
-            ["a%x" % FIRMWARE_START_ADDRESS, args.system_image_name, None]
-        )
+        if is_merged_binary(args.system_image_name):
+            append_merged_files(args.system_image_name, update_commands)
+        else:
+            update_commands.append(
+                ["a%x" % FIRMWARE_START_ADDRESS, args.system_image_name, None]
+            )
     if args.user_app_name:
         if is_merged_binary(args.user_app_name):
             append_merged_files(args.user_app_name, update_commands)
@@ -674,7 +717,7 @@ def main():
         )
 
     if update_commands:
-        capture_bootloader(serial_port)
+        serial_port = capture_bootloader(serial_port, port_name, br)
         for d in update_commands:
             if update_image(serial_port, d[0], d[1], d[2]):
                 print("done", end="")

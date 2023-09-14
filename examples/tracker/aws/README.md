@@ -1,6 +1,6 @@
 # Message Unpacker
 
-A CloudFormation template that creates a [destination](https://developer.myriota.com/code-examples-lambda) for use with the Myriota Cloud. The destination is implemented as a Lambda function which unpacks and saves messages to DynamoDB.
+A CloudFormation template that creates a [destination](https://support.myriota.com/hc/en-us/articles/6482343086735-AWS-Lambda) for use with the Myriota Cloud. The destination is implemented as a Lambda function which unpacks and saves messages to DynamoDB.
 
 ## Deploying template via AWS CLI
 
@@ -17,4 +17,4 @@ If you make changes to the template, you can deploy the changes by running the a
 ## Template Outputs
 
 The deployed template has two output values, the Lambda function's ARN and the ARN for the Role to be assumed by Myriota to invoke the function.
-These two [ARNs](https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) are used to configure your module's destination in the Device Manager. Please follow the `Create a Destination` instructions [found here.](https://developer.myriota.com/code-examples-lambda)
+These two [ARNs](https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html) are used to configure your module's destination in the Device Manager. Please follow the `Create a Destination` instructions [found here.](https://support.myriota.com/hc/en-us/articles/6482343086735-AWS-Lambda)

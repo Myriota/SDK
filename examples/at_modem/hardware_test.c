@@ -25,7 +25,7 @@
 #define RF_TX_TEST_TIME 10
 #define RF_RX_TEST_TIME 10
 
-#define GNSS_COMM_TEST_ONLY true  // false for full test
+#define GNSS_COMM_TEST_ONLY false  // false for full test
 #define GNSS_SENTENCE_PASS_COUNT 50
 #define GNSS_DEFAULT_BAUDRATE 9600
 #define NMEA_BUF_LENGTH (79 + 1)

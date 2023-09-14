@@ -24,7 +24,6 @@ __domain = "https://api.myriota.com/v1/release"
 
 
 def get_download_url(id_token, file_key):
-
     url = "%s/%s" % (__domain, file_key)
     response = requests.get(url, headers={"Authorization": id_token})
     response.raise_for_status()

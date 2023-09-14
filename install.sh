@@ -17,7 +17,7 @@ if [[ $OSTYPE == 'linux'* ]]; then
   sudo apt-get -y update
 
   # Myriota Development Board requirements
-  if $(cat /etc/os-release | grep -q "Ubuntu 20.04"); then
+  if $(cat /etc/os-release | grep -q "Ubuntu 2.\.04"); then
       sudo apt-get -y install make curl python3 python3-pip python-is-python3
       sudo -H pip3 install -r requirements.txt
   elif $(cat /etc/os-release | grep -q "Ubuntu 16.04"); then
@@ -35,7 +35,8 @@ if [[ $OSTYPE == 'linux'* ]]; then
   fi
   curl -O https://downloads.myriota.com/gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2
   sudo mkdir -p /opt/gcc-arm
-  sudo tar -xjvf gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2 -C /opt/gcc-arm --strip-components=1
+  sudo tar -xjvf gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2 -C /opt/gcc-arm --strip-components=1 > /dev/null
+  rm gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2
   sudo cp module/g2/99-myriota-g2.rules /etc/udev/rules.d
   sudo udevadm control --reload-rules && sudo udevadm trigger
 
@@ -49,7 +50,11 @@ elif [[ $OSTYPE == 'darwin'* ]]; then
   echo "SDK Installation on macOS"
   # check if installation of homebrew necessary
   if [ -z $(which brew) ]; then
-    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    echo "Homebrew has been installed"
+    echo "You must run the Homebrew command, brew doctor, and resolve any issues before"
+    echo "Running the Myriota SDK install script again"
+    exit 1
   fi
 
   # Myriota Development Board requirements
@@ -64,7 +69,8 @@ elif [[ $OSTYPE == 'darwin'* ]]; then
   echo "Install ARM compiler"
   curl -O https://downloads.myriota.com/gcc-arm-none-eabi-7-2017-q4-major-mac.tar.bz2
   sudo mkdir -p /opt/gcc-arm
-  sudo tar -xvjf gcc-arm-none-eabi-7-2017-q4-major-mac.tar.bz2 -C /opt/gcc-arm --strip-components=1
+  sudo tar -xvjf gcc-arm-none-eabi-7-2017-q4-major-mac.tar.bz2 -C /opt/gcc-arm --strip-components=1 > /dev/null
+  rm gcc-arm-none-eabi-7-2017-q4-major-mac.tar.bz2
 
   # Satellite Simulator requirements
   # require gcc major version 7 (brew install gcc is version 8)

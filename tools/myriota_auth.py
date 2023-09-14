@@ -98,12 +98,12 @@ def auth_token(token, client_id=CLIENT_ID):
     return post("InitiateAuth", req)["AuthenticationResult"]
 
 
-def auth():
+def auth(client_id=CLIENT_ID):
     """Authenticate and return temporary token"""
     try:
-        return auth_token(get_cached_token())
+        return auth_token(get_cached_token(), client_id)
     except (IOError, ValueError):
-        token = auth_user_pass(get_username(), get_password())
+        token = auth_user_pass(get_username(), get_password(), client_id)
         write_cached_token(token)
         return token
 
