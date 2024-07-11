@@ -415,6 +415,7 @@ file_types = {
     1: "system image",
     2: "user application",
     3: "network information",
+    4: "system image part 2",
 }
 
 
@@ -486,6 +487,14 @@ def append_merged_files(filename, command):
                 command.append(
                     [
                         "o",
+                        filename + "(" + file_types.get(ftype) + ")",
+                        output_temp,
+                    ]
+                )
+            if ftype == 4:
+                command.append(
+                    [
+                        "S",
                         filename + "(" + file_types.get(ftype) + ")",
                         output_temp,
                     ]

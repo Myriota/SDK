@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2020-2022, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -16,10 +16,17 @@
 
 #include "at.h"
 
+// change to 1 to disable GNSS fix and use external time and location from host
+#define DISABLE_GNSS_FIX 0
+
 #define LED_DELAY 100               // ms
 #define WAIT_FOR_TEST_TIMEOUT 3000  // ms
 
 static char RX[UART_MAX_RX_SIZE] = {0};
+
+#if DISABLE_GNSS_FIX
+char *BoardEnvGet() { return "GNSSFIX=0"; }
+#endif
 
 static time_t ModemReceive() {
   int len = ATReceive(RX, UART_MAX_RX_SIZE);

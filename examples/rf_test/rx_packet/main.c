@@ -1,4 +1,4 @@
-// Copyright (c) 2021, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2021-2024, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -32,7 +32,7 @@
 #define LOG_TO_FLASH 1
 #endif
 
-static RxStats_t prev_stats = {0, 0, 0};
+static RxStats_t prev_stats = {0, 0};
 
 static void LedBlink(uint32_t DelayMs, uint32_t RepeatTime) {
   while (RepeatTime--) {
@@ -45,17 +45,14 @@ static void LedBlink(uint32_t DelayMs, uint32_t RepeatTime) {
 }
 
 static void QueryResult() {
-  RxStats_t stats = {0, 0, 0};
+  RxStats_t stats = {0, 0};
 
   RxStatsGet(&stats);
 
   // Using LED to indicates receive status:
-  // Received at least one verified packet: blink 3 times
-  // Received packets but all unverified  : blink 2 times
-  // Received no packet at all            : blink 1 once
-  if (stats.verified > prev_stats.verified)
-    LedBlink(250, 3);
-  else if (stats.unverified > prev_stats.unverified)
+  // Received at least one good packet: blink 2 times
+  // Received no good packets         : blink 1 once
+  if (stats.successes > prev_stats.successes)
     LedBlink(250, 2);
   else
     LedBlink(250, 1);
@@ -65,9 +62,8 @@ static void QueryResult() {
   LogAdd(LOG_CODE_RX_STATS, &stats, sizeof(RxStats_t));
 #endif
 
-  printf("\n%lu rx packets: Attempts %-6u Unverified %-6u Verified %-6u\n",
-         (uint32_t)time(NULL), stats.attempts, stats.unverified,
-         stats.verified);
+  printf("\n%" PRIu32 " rx packets: Attempts %-6u Successes %-6u\n",
+         (uint32_t)time(NULL), stats.attempts, stats.successes);
 }
 
 static time_t GetRxPacketStats() {

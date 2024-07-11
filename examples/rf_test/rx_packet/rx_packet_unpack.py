@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2021-2024, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -29,14 +29,11 @@ import fileinput
 
 
 def unpack(packet):
-    attempts, unverified, verified = struct.unpack(
-        "<HHH", bytearray.fromhex(packet[0:12])
-    )
+    attempts, successes = struct.unpack("<HH", bytearray.fromhex(packet[0:8]))
     return [
         {
             "attempts": attempts,
-            "unverified": unverified,
-            "verified": verified,
+            "successes": successes,
         }
     ]
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2022, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -11,10 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// A demo application running on Myriota's "Sense and Locate" board. Reads from
-// 4-20mA sensor periodically and sends messages to satellite containing the
-// device location, timestamp and current in uA. The application handles wakeup
-// button and vibration sensor events as well.
+// A demo application running on Myriota's "Sense and Locate" board.
+// Reads from 4 - 20mA sensor periodically and sends messages to satellite
+// containing the device location, timestamp, current in uA and battery voltage
+// in mV. The application handles wakeup button and vibration sensor events as
+// well.
 
 #include "myriota_user_api.h"
 
@@ -35,6 +36,7 @@ typedef struct {
   int32_t longitude;  // scaled by 1e7, e.g. 1791234567 (east 179.1234567)
   uint32_t time;      // epoch timestamp of the reading
   uint32_t current;   // sensor current in uA
+  uint16_t battery_voltage;  // battery voltage in mV
 } __attribute__((packed)) sensor_message;
 
 // Default values
@@ -59,12 +61,10 @@ static void LedBlink(uint8_t count) {
 }
 
 static int ReadSensor(uint32_t *value) {
-  int result;
-
   GPIOSetHigh(GPIO_4_20_ENABLE);
   Delay(DELAY_MS_21V_STABILISE);
 
-  result = ADCGetVoltage(PIN_ADC0, ADC_REF_2V5, value);
+  int result = ADCGetVoltage(PIN_ADC0, ADC_REF_2V5, value);
   if (result != 0) printf("Error reading sensor: %i", result);
 
   GPIOSetLow(GPIO_4_20_ENABLE);
@@ -104,22 +104,25 @@ static void DisplaySensorResult(uint32_t current) {
 static time_t SendMessage(void) {
   static uint16_t sequence_number = 0;
   int32_t lat, lon;
-  time_t timestamp, next_schedule;
-  uint32_t current;
+  time_t next_schedule;
+  uint32_t timestamp, current, volt_32;
 
   next_schedule = TimeGet() + 24 * 3600 / MESSAGE_PER_DAY;
 
   if (GNSSFix()) printf("Failed to get GNSS Fix, using last known fix\n");
-  LocationGet(&lat, &lon, &timestamp);
+  LocationGet(&lat, &lon, NULL);
 
+  timestamp = TimeGet();
   current = MeasureCurrent();
+  BatteryGetVoltage(&volt_32);
+  uint16_t voltage = (uint16_t)volt_32;
 
-  const sensor_message message = {sequence_number, lat, lon, timestamp,
-                                  current};
+  const sensor_message message = {sequence_number, lat,     lon,
+                                  timestamp,       current, voltage};
   ScheduleMessage((void *)&message, sizeof(message));
 
-  printf("Scheduled message: %u %f %f %u %u\n", sequence_number, lat * 1e-7,
-         lon * 1e-7, (unsigned int)(timestamp), (unsigned)current);
+  printf("Scheduled message: %u %f %f %u %u %u\n", sequence_number, lat * 1e-7,
+         lon * 1e-7, (unsigned int)timestamp, (unsigned int)current, voltage);
 
   sequence_number++;
 

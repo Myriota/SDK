@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2021, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -28,11 +28,14 @@ APPLICATION_NETWORKINFO_BIN:=$(PROGRAM_NAME).bin
 
 BSP_PATH?=$(ROOTDIR)/module/g2/boards/$(BOARD)
 
-ifeq ($(SATELLITES),Lab)
+LAB_TEST ?= 0
+LAB_TEST_WITH_LOCATION ?= 0
+
+ifneq ($(LAB_TEST),0)
 CFLAGS +=-DLAB_TEST
 endif
 
-ifeq ($(SATELLITES),LabWithLocation)
+ifneq ($(LAB_TEST_WITH_LOCATION),0)
 CFLAGS +=-DLAB_TEST_WITH_LOCATION
 endif
 
@@ -57,7 +60,7 @@ $(OBJ_DIR)/%.o : %.c
 $(PROGRAM_NAME): $(APPLICATION_NETWORKINFO_BIN)
 
 $(APPLICATION_NETWORKINFO_BIN): $(OBJ_DIR)/$(PROGRAM_NAME_ELF) $(buildkey)
-	arm-none-eabi-objcopy -O binary $< $(PROGRAM_RAW_BIN)
+	$(OBJCOPY) -O binary $< $(PROGRAM_RAW_BIN)
 	@(printf "0: "; xxd -ps -c32 $(buildkey)) | xxd -r - $(PROGRAM_RAW_BIN)
 ifneq (,$(findstring $(BSP_PATH)/bsp.c,$(APP_SRC)))
 	@echo "***Default BSP will be deprecated, please create BSP file (bsp.c) under the application folder***"
@@ -84,4 +87,3 @@ clean:
 CPPEXT:=
 CEXT:=c
 ASMEXT:=s
-include $(ROOTDIR)/math/build.mk

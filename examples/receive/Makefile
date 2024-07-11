@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -12,13 +12,14 @@
 # limitations under the License.
 
 
-PROGRAM_NAME = max_throughput
+PROGRAM_NAME = receive
 
 ROOTDIR ?= $(abspath ../..)
 
 APP_SRC = main.c
-
-ifneq (sim, $(notdir $(MODULE)))
+ifeq (sim, $(notdir $(MODULE)))
+	APP_SRC += sim.c
+else
 	APP_SRC += bsp.c
 endif
 

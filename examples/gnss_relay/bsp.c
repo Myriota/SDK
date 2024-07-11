@@ -84,12 +84,12 @@ __attribute__((weak)) int BoardAntennaSelect(RadioMode Mode, RadioBand Band) {
   }
 
   if (IsV1()) {
-    if (Band == RADIO_BAND_VHF) {
-      // Port 1, external
-      GPIOSetLow(ANT_SEL_PIN);
-    } else {
+    if (Band == RADIO_BAND_LPD) {
       // Port 2, on-board coil
       GPIOSetHigh(ANT_SEL_PIN);
+    } else {
+      // Port 1, external
+      GPIOSetLow(ANT_SEL_PIN);
     }
   } else {
     // Always port 2, dual tuned external antenna

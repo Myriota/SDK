@@ -6,7 +6,7 @@ if { $argc == 2 } {
   set log [lindex $argv 1]
   log_file $log
   proc send_string { string } { send $string }
-  spawn sh -c "STARTTIME=1577836888 LATITUDE=-34.9251188 LONGITUDE=138.600888 $command"
+  spawn sh -c "STARTTIME=1672531200 LATITUDE=-34.9251188 LONGITUDE=138.600888 $command"
 }
 
 # real hardware test
@@ -54,10 +54,10 @@ send_string "AT+REGCODE=?\r"
 expect -re {OK\+REGCODE=[0-9a-z]{25}\s+}
 # time
 send_string "AT+TIME=?\r"
-expect -re {OK\+TIME=1[0-9]{9}\s+}
+expect -re {OK\+TIME=}
 # location
 send_string "AT+LOCATION=?\r"
-expect -re {OK\+LOCATION=(-?\d{1,9}),(-?\d{1,10})\s+}
+expect -re {OK\+LOCATION=}
 # no query command match - 1
 send_string "AT+REGCOD=?\r"
 expect "ERROR=UNKNOWN_QUERY_CMD"
@@ -130,6 +130,46 @@ expect "FAIL+RSSI=340000000"
 # rssi start with frequency - 3
 send_string "AT+RSSI=430000000\r"
 expect "FAIL+RSSI=430000000"
+# set time to 0 and verify
+send_string "AT+TIME=0\r"
+expect -re {OK\+TIME=[0-9]}
+send_string "AT+TIME=?\r"
+expect -re {OK\+TIME=[0-9]}
+# set time and verify
+send_string "AT+TIME=1673395800\r"
+expect -re {OK\+TIME=167339580[0-1]}
+set timeout 60
+send_string "AT+TIME=?\r"
+expect -re {OK\+TIME=167339[1-9][0-9][0-9][0-9]}
+# set time parameter too long
+send_string "AT+TIME=12345678901\r"
+expect "FAIL+TIME=12345678901"
+# set time parameter with unwanted characters
+send_string "AT+TIME=1234567890a\r"
+expect "FAIL+TIME=1234567890a"
+# set location and verify
+send_string "AT+LOCATION=-349205499,1386086737\r"
+expect "OK+LOCATION=-349205499,1386086737"
+send_string "AT+LOCATION=?\r"
+expect "OK+LOCATION=-349205499,1386086737"
+# set location to 0 and verify
+send_string "AT+LOCATION=0,0\r"
+expect "OK+LOCATION=0,0"
+send_string "AT+LOCATION=?\r"
+expect "OK+LOCATION=0,0"
+set timeout 3
+# set location with unwanted characters
+send_string "AT+LOCATION=a,b\r"
+expect "FAIL+LOCATION=a,b"
+# set location with no ',' separater
+send_string "AT+LOCATION=-349205499.1386086737\r"
+expect "FAIL+LOCATION=-349205499.1386086737"
+# set location with lat out of range
+send_string "AT+LOCATION=-900000001,1386086737\r"
+expect "FAIL+LOCATION=-900000001,1386086737"
+# set location with lon out of range
+send_string "AT+LOCATION=-349205499,1800000001\r"
+expect "FAIL+LOCATION=-349205499,1800000001"
 # schedule message
 send_string "AT+SMSG=0102030405060708091011121314151617181920\r"
 expect "OK+SMSG=0102030405060708091011121314151617181920"

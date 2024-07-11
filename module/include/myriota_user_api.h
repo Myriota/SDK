@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2022, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -87,11 +87,6 @@ time_t OnLeuartReceive(void);
 /// reading and satellite transmission. If no opportunity is found between \p
 /// After and \p Before, then \p Before is returned.
 time_t BeforeSatelliteTransmit(time_t After, time_t Before);
-/// Return a time to schedule next message to achieve the maximum message
-/// throughput. The function is best suited to near-periodic message scheduling
-/// where the period will adapt to the current satellite network, ensuring
-/// the number of messages is limited to \p MaxMessagesPerDay.
-time_t MaxThroughput(unsigned MaxMessagesPerDay);
 /// @}
 
 /// @defgroup User_message User message
@@ -107,7 +102,7 @@ time_t MaxThroughput(unsigned MaxMessagesPerDay);
 /// replaces an existing message in the queue. This may result in dropped
 /// messages. See also MessageBytesFree. Returns >=0 when succeeded or <0 if
 /// failed.
-float ScheduleMessage(const uint8_t *Message, size_t MessageSize);
+int ScheduleMessage(const uint8_t *Message, size_t MessageSize);
 /// Returns number of bytes remaining in internal queue, that is,
 /// the number of bytes that can be scheduled with ScheduleMessage.
 size_t MessageBytesFree(void);
@@ -116,6 +111,19 @@ size_t MessageBytesFree(void);
 void SaveMessages(void);
 /// Clear all messages in the message queue.
 void MessageQueueClear(void);
+
+/// @}
+
+/// @defgroup Device Control
+/// @{
+
+// Received user message event
+time_t OnReceiveMessage(void);
+
+/// Retrieve the received user message. The length of received message is
+/// indicated by \p size. Returns a pointer to the message if size is
+/// greater than 0 or NULL otherwise.
+uint8_t *ReceiveMessage(int *size);
 
 /// @}
 

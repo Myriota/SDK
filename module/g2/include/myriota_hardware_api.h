@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2021, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -260,11 +260,10 @@ void RFTestRxStop(void);
 /// @defgroup RF_Stats Satellite radio statistics
 /// @{
 
-/// Rx stats type
+/// Rx stats type, both counters exclude messages sent to the device by the user
 typedef struct {
-  uint16_t attempts;    ///< Number of attempts made to receive a packet
-  uint16_t unverified;  ///< Number of packets failed signature verification
-  uint16_t verified;    ///< Number of successful packets
+  uint16_t attempts;   ///< Number of attempts made to receive a packet
+  uint16_t successes;  ///< Number of successful packets
 } RxStats_t;
 
 /// Get satellite radio receiver (downlink) statistics

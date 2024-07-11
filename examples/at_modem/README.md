@@ -65,7 +65,7 @@ Failure: `FAIL+<CMD>=<VALUE>`
 | SDK version       | VSDK     | SDK version | Format: major.minor.patch |
 | Module ID         | MID      | Module ID and part number | E.g. 0012345678 M1-24 |
 | Registration code | REGCODE  | Registration code | - |
-| Get time          | TIME     | Unix epoch time | E.g. 1595911282 |
+| Get time          | TIME     | Unix epoch time | E.g. 1672531200 |
 | Get location      | LOCATION | Latitude and longitude of last GNSS fix, scaled by 1e7 | E.g. -349205499,1386086737 |
 | Get suspend mode  | SUSPEND  | 0: disabled, 1:enabled | - |
 
@@ -94,6 +94,8 @@ Failure: `FAIL+<CMD>` or `FAIL+<CMD>=<PARAMETER>`
 | RSSI test             | RSSI     | Frequency in Hz. E.g. 400000000 | Return "OK+TXSTART=RSSI" in dBm on the specified frequency |
 | Schedule message      | SMSG     | Hex string of the message | The length should be even and no more than 40 hex characters |
 | Change suspend mode   | SUSPEND  | 1 to enable and 0 to disable | - |
+| Set time              | TIME     | Unix epoch time | E.g. 1715584647 |
+| Set location          | LOCATION | Latitude and longitude to be set, scaled by 1e7 | E.g. -349205499,1386086737 |
 
 - RF TX parameter
 
@@ -179,7 +181,7 @@ GNSS fix will be skipped in this mode.
 
 1. Build the modem example application in Lab Mode.
 
-`make clean; SATELLITES=Lab make`
+`make clean; LAB_TEST=1 make`
 
 2. Program the board.
 
@@ -218,3 +220,7 @@ This test can be used to do TX power, TX current draw and TX/RX path connectivit
 This test can be used to check the RX path. More information can be found in the [readme file](https://github.com/Myriota/SDK/blob/master/examples/rf_test/rx/README.md) of RF RX test example.
 
 Test results are output to both modem communication interface and serial debug interface.
+
+## Disable module GNSS fix
+
+It can be achieved by setting the `DISABLE_GNSS_FIX` macro to `1` in `main.c`. The GNSS fix process will be skipped and the time and location will be set to initial values. The host will need to feed the real time and location into the module using the time and location control commands.

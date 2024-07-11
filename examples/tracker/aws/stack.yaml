@@ -67,6 +67,13 @@ Resources:
             packet = json.loads(event["Data"])["Packets"][0]["Value"]
             unpack(packet, module_id, env)
 
+  MessageUnpackerLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: [MessageUnpacker]
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${MessageUnpacker}
+      RetentionInDays: 90
+
   MessageUnpackerRole:
     Type: AWS::IAM::Role
     Properties:

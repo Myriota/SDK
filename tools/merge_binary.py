@@ -29,6 +29,7 @@ file_types = {
     1: "system image",
     2: "user application",
     3: "network information",
+    4: "system image part 2",
 }
 
 header_length = (
@@ -183,6 +184,13 @@ def main():
         metavar="FILE",
         help="network information binary file to be merged or extract to",
     )
+    parser.add_argument(
+        "-k",
+        "--system_file2",
+        dest="system_filename2",
+        metavar="FILE",
+        help="system image part 2 binary file to be merged or extract to",
+    )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "-x",
@@ -217,6 +225,8 @@ def main():
             list_extract_file(args.file_to_extract, args.application_filename, 2)
         if args.network_info_filename:
             list_extract_file(args.file_to_extract, args.network_info_filename, 3)
+        if args.system_filename2:
+            list_extract_file(args.file_to_extract, args.system_filename2, 4)
 
     if args.merged_file:
         output_temp = tempfile.NamedTemporaryFile(mode="w+b")
@@ -227,6 +237,8 @@ def main():
             append_file(args.application_filename, output_temp, 2)
         if args.network_info_filename:
             append_file(args.network_info_filename, output_temp, 3)
+        if args.system_filename2:
+            append_file(args.system_filename2, output_temp, 4)
         output_temp.flush()
         shutil.copyfile(output_temp_filename, args.merged_file)
         output_temp.close()

@@ -25,7 +25,7 @@ static time_t Nvram() {
   for (num_of_timestamp = 0; num_of_timestamp < 2; num_of_timestamp++) {
     timestamp = *(uint32_t *)(NvramMem + num_of_timestamp * sizeof(timestamp));
     if (timestamp != 0xFFFFFFFF)
-      printf("Timestamp %d = %lu\n", num_of_timestamp + 1, timestamp);
+      printf("Timestamp %d = %" PRIu32 "\n", num_of_timestamp + 1, timestamp);
     else
       break;
   }

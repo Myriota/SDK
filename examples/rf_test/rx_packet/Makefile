@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2021-2024, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -18,7 +18,3 @@ ROOTDIR ?= $(abspath ../../..)
 APP_SRC = bsp.c main.c
 
 include $(ROOTDIR)/module/app.mk
-
-ifeq ("LabRx", "$(SATELLITES)")
-CFLAGS +=-DLAB_TEST
-endif

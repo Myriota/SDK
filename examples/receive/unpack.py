@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021-2022, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2023, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -14,11 +14,12 @@
 # limitations under the License.
 
 
-# Unpacker for the snl example.
+# Unpacker for the receive example
 # Usage:
-# unpack.py -x 1000593033eb7e02a652b47c746054100000f20c
+# unpack.py -x 6e07b66401009b3cb56448656c6c6f2ccccccccc
 # or
-# echo "1000593033eb7e02a652b47c746054100000f20c" | unpack.py
+# echo 6e07b66401009b3cb56448656c6c6f2ccccccccc | unpack.py
+
 
 import argparse
 import struct
@@ -27,24 +28,23 @@ import fileinput
 
 
 def unpack(packet):
-    num, lat, lon, timestamp, current, voltage = struct.unpack(
-        "<HiiIIH", bytearray.fromhex(packet[0:40])
+    timestamp, count_rx, timestamp_rx = struct.unpack(
+        "<IHI", bytearray.fromhex(packet[0:20])
     )
+
     return [
         {
-            "Sequence number": num,
-            "Latitude": lat / 1e7,
-            "Longitude": lon / 1e7,
             "Timestamp": timestamp,
-            "Current": current,
-            "Battery voltage": voltage,
+            "CountReceive": count_rx,
+            "TimestampReceive": timestamp_rx if count_rx > 0 else None,
+            "MessageReceive": str(packet[20:40]) if count_rx > 0 else None,
         }
     ]
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Unpack hexadecimal data from snl example.",
+        description="Unpack hexadecimal data from receive example.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(

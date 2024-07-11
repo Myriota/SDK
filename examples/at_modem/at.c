@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2020-2024, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -150,7 +150,7 @@ static void QueryRegCodeHandler(uint32_t CmdId) {
 }
 
 static void QueryTimeHandler(uint32_t CmdId) {
-  char tx_para[] = "1483228800";
+  char tx_para[] = "1672531200";
   sprintf(tx_para, "%u", (unsigned int)TimeGet());
   ATRespond(AT_RESP_OK_START, Queries[CmdId], tx_para);
   DEBUG_INFO("Read time = %s\n", tx_para);
@@ -323,9 +323,7 @@ static void ControlScheduleMsgHandler(uint32_t CmdId, const char *Para) {
     ATRespond(AT_RESP_FAIL_START, Controls[CmdId],
               ErrorCodes[AT_ERROR_MESSAGE_TOO_LONG]);
     DEBUG_ERROR("Message too long\n");
-  }
-  // Invalid parameter
-  else if (msg_len <= 0) {
+  } else if (msg_len <= 0) {
     ATRespond(AT_ERROR_START, NULL, ErrorCodes[AT_ERROR_INVALID_PARAMETER]);
     DEBUG_ERROR("Invalid parameter\n");
   } else {
@@ -368,6 +366,53 @@ static void ControlSuspendMode(uint32_t CmdId, const char *Para) {
   }
 }
 
+static void ControlTimeHandler(uint32_t CmdId, const char *Para) {
+  char resp[] = "1672531200";
+  if (strlen(Para) == 0 || strlen(Para) > 10) {
+    ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
+    DEBUG_ERROR("No time specified or time format is wrong\n");
+  } else {
+    uint32_t time = (uint32_t)atoi(Para);
+    if ((strlen(Para) == 1 && Para[0] == '0') || time != 0) {
+      TimeSet(time);
+      sprintf(resp, "%u", (unsigned int)TimeGet());
+      ATRespond(AT_RESP_OK_START, Controls[CmdId], resp);
+      DEBUG_INFO("Set time = %s\n", resp);
+    } else {
+      ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
+      DEBUG_INFO("Invalid time input %s\n", Para);
+    }
+  }
+}
+
+static void ControlLocationHandler(uint32_t CmdId, const char *Para) {
+  char resp[] = "-900000000,-1800000000";
+  char para[AT_MAX_PARA_LEN] = {0};
+  char *p = para;
+  int32_t lat, lon;
+  memcpy(para, Para, strlen(Para));
+  if (strstr(p, ",") != NULL) {
+    strtok(p, ",");
+    lat = atoi(p);
+    if ((strlen(p) == 1 && p[0] == '0') ||
+        (lat != 0 && lat >= -900000000 && lat <= 900000000)) {
+      p = strtok(NULL, ",");
+      lon = atoi(p);
+      if ((strlen(p) == 1 && p[0] == '0') ||
+          (lon != 0 && lon >= -1800000000 && lon <= 1800000000)) {
+        LocationSet(lat, lon);
+        LocationGet(&lat, &lon, NULL);
+        sprintf(resp, "%i,%i", (signed)lat, (signed)lon);
+        ATRespond(AT_RESP_OK_START, Controls[CmdId], resp);
+        DEBUG_INFO("Set location = %s\n", Para);
+        return;
+      }
+    }
+  }
+  ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
+  DEBUG_ERROR("Invalid format for location setting\n");
+}
+
 static const QueryHandler_t QueryHandlers[] = {
     {AT_QUERY_MSG_QUEUE, &QueryMsgQueueHandler},
     {AT_QUERY_STATE, &QueryStateHandler},
@@ -387,6 +432,8 @@ static const ControlHandler_t ControlHandlers[] = {
     {AT_CONTROL_RSSI, &ControlRssiHandler},
     {AT_CONTROL_SCHEDULE_MESSAGE, &ControlScheduleMsgHandler},
     {AT_CONTROL_SUSPEND_MODE, &ControlSuspendMode},
+    {AT_CONTROL_TIME, &ControlTimeHandler},
+    {AT_CONTROL_LOCATION, &ControlLocationHandler},
 };
 
 static void *GetHandlder(const char *CmdStr, const char *Strs[],
@@ -461,17 +508,17 @@ void ATProcess(char *Input, int Len) {
     invalid_cmd = false;
     // Find the start of current command
     cmd_start = input_start;
-    while (isspace(*cmd_start) && (cmd_start < input_end)) {
+    while (isspace((int)*cmd_start) && (cmd_start < input_end)) {
       cmd_start++;
     }
     // Find the end of current command
     cmd_end = cmd_start;
-    while ((!isspace(*cmd_end)) && (cmd_end < input_end)) {
+    while ((!isspace((int)*cmd_end)) && (cmd_end < input_end)) {
       cmd_end++;
     }
     // No more commands
     if (cmd_start == cmd_end) break;
-    if (!isspace(*cmd_end)) {
+    if (!isspace((int)*cmd_end)) {
       invalid_cmd = true;
       DEBUG_ERROR("No terminator\n");
     } else if (cmd_end - cmd_start < AT_MIN_RX_SIZE) {

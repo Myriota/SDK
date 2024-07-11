@@ -25,3 +25,8 @@ else
 endif
 
 include $(ROOTDIR)/module/app.mk
+
+regenerate_file: networkinfo
+	printf "const " > network_info_example.h
+	cp networkinfo.bin NETWORK_INFO_EXAMPLE
+	xxd -i NETWORK_INFO_EXAMPLE >> network_info_example.h

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2016-2021, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -12,37 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+CROSS_COMPILER_PATH=/opt/gcc-arm-13_2_1
+
 if [[ $OSTYPE == 'linux'* ]]; then
   echo "SDK Installation on Linux System"
   sudo apt-get -y update
 
   # Myriota Development Board requirements
   if $(cat /etc/os-release | grep -q "Ubuntu 2.\.04"); then
-      sudo apt-get -y install make curl python3 python3-pip python-is-python3
-      sudo -H pip3 install -r requirements.txt
-  elif $(cat /etc/os-release | grep -q "Ubuntu 16.04"); then
-    echo -e "\t======================================================================="
-    echo -e "\tWARNING: Ubuntu 16.04 is not supported. Some installations may fail"
-    echo -e "\t======================================================================="
-    sudo apt-get -y install make curl python bzip2
-    curl -O https://bootstrap.pypa.io/2.7/get-pip.py
-    sudo python get-pip.py
-    sudo python -m pip install --upgrade "pip < 21.0"
-    sudo -H pip install -r requirements.txt
+    sudo apt-get -y install make curl python3 python3-pip python-is-python3
+    sudo -H pip3 install -r requirements.txt
   else
-      sudo apt-get -y install make curl python python-pip
-      sudo -H pip install -r requirements.txt
+    echo -e "\t======================================================================="
+    echo -e "\tWARNING: Ubuntu 18.04 and under are not supported."
+    echo -e "\t======================================================================="
   fi
-  curl -O https://downloads.myriota.com/gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2
-  sudo mkdir -p /opt/gcc-arm
-  sudo tar -xjvf gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2 -C /opt/gcc-arm --strip-components=1 > /dev/null
-  rm gcc-arm-none-eabi-7-2017-q4-major-linux.tar.bz2
+  curl -O https://downloads.myriota.com/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
+  sudo mkdir -p ${CROSS_COMPILER_PATH}
+  sudo tar -xf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz -C ${CROSS_COMPILER_PATH} --strip-components=1
   sudo cp module/g2/99-myriota-g2.rules /etc/udev/rules.d
   sudo udevadm control --reload-rules && sudo udevadm trigger
 
-  # Satellite Simulator requirements
-  sudo apt-get -y install build-essential rtl-sdr
-  make -C tools/ satellite_simulator
+  # Tools useful for host simulator
+  sudo apt-get -y install build-essential
 
   # Tools for testing
   sudo apt-get -y install expect
@@ -67,19 +59,14 @@ elif [[ $OSTYPE == 'darwin'* ]]; then
   ln -sf /usr/local/opt/coreutils/libexec/gnubin/mv /usr/local/bin/mv
 
   echo "Install ARM compiler"
-  curl -O https://downloads.myriota.com/gcc-arm-none-eabi-7-2017-q4-major-mac.tar.bz2
-  sudo mkdir -p /opt/gcc-arm
-  sudo tar -xvjf gcc-arm-none-eabi-7-2017-q4-major-mac.tar.bz2 -C /opt/gcc-arm --strip-components=1 > /dev/null
-  rm gcc-arm-none-eabi-7-2017-q4-major-mac.tar.bz2
+  if [[ $(uname -m) == 'arm64' ]]; then
+    curl -O https://downloads.myriota.com/arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
+    sudo mkdir -p ${CROSS_COMPILER_PATH}
+    sudo tar -xf arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz -C ${CROSS_COMPILER_PATH} --strip-components=1
+  else
+    curl -O https://downloads.myriota.com/arm-gnu-toolchain-13.2.rel1-darwin-x86_64-arm-none-eabi.tar.xz
+    sudo mkdir -p ${CROSS_COMPILER_PATH}
+    sudo tar -xf arm-gnu-toolchain-13.2.rel1-darwin-x86_64-arm-none-eabi.tar.xz -C ${CROSS_COMPILER_PATH} --strip-components=1
+  fi
 
-  # Satellite Simulator requirements
-  # require gcc major version 7 (brew install gcc is version 8)
-  brew install gcc@7
-  # gcc defaults to clang on macOS -> create symbolic links for the real thing
-  ln -sf /usr/local/bin/gcc-7 /usr/local/bin/cc
-  ln -sf /usr/local/bin/g++-7 /usr/local/bin/c++
-  ln -sf /usr/local/bin/gcc-7 /usr/local/bin/gcc
-  ln -sf /usr/local/bin/g++-7 /usr/local/bin/g++
-  brew install rtl-sdr
-  make -C tools/ satellite_simulator
 fi

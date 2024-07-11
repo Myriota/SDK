@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.0.0
+
+API changes:
+
+  - Adds `OnReceiveMessage` and `ReceiveMessage` APIs to retrieve device control messages
+  - Updates API `RxStatsGet` to retrieve [downlink receive statistics](examples/rf_test/rx_packet/README.md)
+  - Updates return type of API `ScheduleMessage` to `int`
+  - Removes API `MaxThroughput` and associated example
+  - Drops support for `SATELLITES=LabRx` in `rx_packet` example
+  - Drops support for `SATELLITES=Lab` and `SATELLITES=LabRxWithLocation`
+  - Drops support for satellite simulator
+
+Improvements:
+
+  - Improves network performance
+  - Reduces energy consumption
+  - Adds support to receive messages
+  - Adds [receive example application](examples/receive/README.md) to demonstrate `OnReceiveMessage` and `ReceiveMessage`
+  - Adds battery voltage in the message of Sense&Locate example
+  - Adds time and location setting commands in `at_modem` example to support external time and location sources
+  - Updates cross compiler to version 13.2.1
+
+Other changes:
+
+  - Drops support for Ubuntu 18.04
+
 ## 1.5.6-HOTFIX1
 
 Improvements:
@@ -11,6 +37,7 @@ Improvements:
 ## 1.5.6
 
 Improvements:
+
   - Adds support to retrieve network information and diagnostics data from the module. The data can be uploaded to Myriota cloud for post-processing
 
 ## 1.5.5
@@ -19,7 +46,7 @@ Fixes:
 
 - Fixes an issue where the wakeup capability of both GPIOs is disabled when `GPIODisableWakeup` is called
 - Fixes an issue in `RFTestTxStop` hardware API where LED won't be turned off when the test stops
-- Fixes an issue in the RSSI test of the `rf_test` example where the BSP antenna selection logic is not been used properly
+- Fixes an issue in the RSSI test of the `rf_test` example where the BSP antenna selection logic is not used properly
 - Fixes an issue in the makefile of `i2c_spi` example where SPI mode binary cannot be built
 - Fixes an issue where unnecessary diagnostic messages are generated when specific network information is received via downlink
 
@@ -39,6 +66,7 @@ Improvements:
 - Adds support of applying TX calibration table in the module to tune the TX power and current draw
 - Clarifies temperature sensor readings in the comment/document
 - Improves satellite simulator to capture non-real-time packets
+
 Fixes:
 
 - Corrects module TX frequency selection error which reduces the message success rate

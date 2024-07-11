@@ -17,8 +17,9 @@
 #include "myriota_user_api.h"
 #include "network_info_example.h"
 
-#define MAX_WRITE 128
+#define BUFFER_SIZE 2048
 static uint32_t bytes_written = 0;
+static uint8_t update_buffer[BUFFER_SIZE];
 
 static int restart_update(void) {
   printf("INFO: Restarting network info update restarted\n");
@@ -35,13 +36,14 @@ static int NetworkInfoStart(void) {
 }
 
 static int NetworkInfoUpdateXfer(void) {
-  uint32_t bytes_this_write = NETWORK_INFO_EXAMPLE_len - bytes_written;
-  if (bytes_this_write >= MAX_WRITE) bytes_this_write = MAX_WRITE;
+  uint32_t bytes_left = NETWORK_INFO_EXAMPLE_len - bytes_written;
+  uint32_t bytes_this_write =
+      bytes_left > sizeof(update_buffer) ? sizeof(update_buffer) : bytes_left;
+  memcpy(update_buffer, NETWORK_INFO_EXAMPLE + bytes_written, bytes_this_write);
+  int ret = SystemUpdateXfer(bytes_written, update_buffer, bytes_this_write);
 
-  int ret = SystemUpdateXfer(
-      bytes_written, NETWORK_INFO_EXAMPLE + bytes_written, bytes_this_write);
-
-  printf("NetworkInfo bytes transfer %s\n", ret ? "failed" : "succeeded");
+  printf("NetworkInfo %" PRIu32 " bytes transfer %s\n", bytes_this_write,
+         ret ? "failed" : "succeeded");
 
   if (ret == 0) bytes_written += bytes_this_write;
   return 0;
