@@ -25,3 +25,6 @@ else
 endif
 
 include $(ROOTDIR)/module/app.mk
+ifeq ("$(DISABLE_GNSS_FIX)", "1")
+	CFLAGS+=-DDISABLE_GNSS_FIX
+endif

@@ -16,8 +16,11 @@
 
 #include "at.h"
 
-// change to 1 to disable GNSS fix and use external time and location from host
+// Build with DISABLE_GNSS_FIX=1 or change to 1 here to disable GNSS fix and use
+// external time and location from host
+#ifndef DISABLE_GNSS_FIX
 #define DISABLE_GNSS_FIX 0
+#endif
 
 #define LED_DELAY 100               // ms
 #define WAIT_FOR_TEST_TIMEOUT 3000  // ms
