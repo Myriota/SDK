@@ -60,7 +60,7 @@ Failure: `FAIL+<CMD>=<VALUE>`
 
 | Command           | Command string | Return              | Note                        |
 |-------------------|----------------|---------------------|-----------------------------|
-| Message queue     | MSGQ     | Number of free bytes in the message queue | - |
+| Message queue     | MSGQ     | Number of free slots in the message queue | - |
 | System state      | STATE    | INITIALIZING, GNSS_ACQ or READY | Refer to power up logic |
 | SDK version       | VSDK     | SDK version | Format: major.minor.patch |
 | Module ID         | MID      | Module ID and part number | E.g. 0012345678 M1-24 |
@@ -92,7 +92,7 @@ Failure: `FAIL+<CMD>` or `FAIL+<CMD>=<PARAMETER>`
 | Stop RF TX test       | TXSTOP   | N/A | - |
 | Start GNSS fix        | GNSSFIX  | N/A | Return OK immediately then return OK again when successful or return FAIL after 90s timeout |
 | RSSI test             | RSSI     | Frequency in Hz. E.g. 400000000 | Return "OK+TXSTART=RSSI" in dBm on the specified frequency |
-| Schedule message      | SMSG     | Hex string of the message | The length should be even and no more than 40 hex characters |
+| Schedule message      | SMSG     | Hex string of the message | The length should be even |
 | Change suspend mode   | SUSPEND  | 1 to enable and 0 to disable | - |
 | Set time              | TIME     | Unix epoch time | E.g. 1715584647 |
 | Set location          | LOCATION | Latitude and longitude to be set, scaled by 1e7 | E.g. -349205499,1386086737 |
@@ -115,7 +115,8 @@ E.g. AT+TXSTART=161450000,0,1,60
 | Error code         | Meaning                             | Countermeasure                |
 |--------------------|-------------------------------------|-------------------------------|
 | INVALID_PARAMETER  | Control commands are carrying illegal parameters | Debug port(UART0 - 115200,N,8,1) can be used to monitor detail causes when debugging |
-| MESSAGE_TOO_LONG   | Scheduled message is over 20 bytes | Reduce message size |
+| MESSAGE_TOO_LONG   | Scheduled message is too long | Reduce message size |
+| TOO_MANY_MESSAGES  | Too many messages scheduled in an hour | Wait for sometime before scheduling the message |
 | BUFFER_OVERFLOW    | Modem RX buffer overflow | Reduce UART frame length |
 | UNKNOWN_QUERY_CMD | Query identifier "=?" detected but no command match | Check query command list |
 | UNKNOWN_CONTROL_CMD | Control format matched but no command is found | Check control command list |

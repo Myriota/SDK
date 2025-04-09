@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2022, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2020-2025, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -25,16 +25,18 @@
 #define LED_DELAY 100               // ms
 #define WAIT_FOR_TEST_TIMEOUT 3000  // ms
 
-static char RX[UART_MAX_RX_SIZE] = {0};
-
 #if DISABLE_GNSS_FIX
 char *BoardEnvGet() { return "GNSSFIX=0"; }
 #endif
 
 static time_t ModemReceive() {
+  char RX[UART_MAX_RX_SIZE] = {0};
   int len = ATReceive(RX, UART_MAX_RX_SIZE);
   if (len > 0) {
-    ATProcess(RX, len);
+    do {
+      ATProcess(RX, len);
+      len = ATReceive(RX, UART_MAX_RX_SIZE);
+    } while (len > 0);
   } else {
     printf("No data received\n");
   }

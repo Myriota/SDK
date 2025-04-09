@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2024, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2020-2025, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -31,7 +31,7 @@ static unsigned State = AT_STATE_INIT;
 
 static int ASCIIToHex(char *Dest, const char *Src) {
   int char_cnt = 0;
-  if (strlen(Src) == 0) return -1;
+  if (Src == NULL || strlen(Src) == 0) return -1;
   for (int i = 0; i < strlen(Src); i++) {
     char ch = Src[i];
     if ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F')) {
@@ -62,7 +62,7 @@ int ATInit() {
   return 0;
 }
 
-size_t ATReceive(char *Rx, size_t MaxLength) {
+size_t ATReceiveTimeout(char *Rx, const size_t MaxLength) {
   const uint32_t start = TickGet();
   size_t count = 0;
   while ((TickGet() - start < RECEIVE_TIMEOUT) && (count <= MaxLength)) {
@@ -70,9 +70,22 @@ size_t ATReceive(char *Rx, size_t MaxLength) {
     if (UARTRead(UartHandle, &ch, 1) == 1) {
       if (count < MaxLength) {
         Rx[count++] = ch;
+        if (isspace(ch)) break;
       }
     }
   }
+  return count;
+}
+
+size_t ATReceive(char *Rx, const size_t MaxLength) {
+  size_t count = 0;
+  while (count <= MaxLength) {
+    int len = ATReceiveTimeout(Rx + count, MaxLength - count);
+    if (len <= 0) break;
+    count += len;
+    if (isspace((int)Rx[count - 1])) break;
+  }
+
   return count;
 }
 
@@ -82,6 +95,7 @@ static int ATRespond(const char *Header, const char *Command,
   if (Header != NULL) {
     strcpy(Tx, Header);
   }
+
   if (Command != NULL) {
     strcat(Tx, Command);
   }
@@ -94,7 +108,9 @@ static int ATRespond(const char *Header, const char *Command,
   return 0;
 }
 
-void ATSend(char *Tx) { UARTWrite(UartHandle, (uint8_t *)Tx, strlen(Tx)); }
+void ATSend(const char *Tx) {
+  UARTWrite(UartHandle, (uint8_t *)Tx, strlen(Tx));
+}
 
 void ATSetState(SysStates State) {
   switch (State) {
@@ -118,11 +134,11 @@ static SysStates ATGetState() {
 
 static void QueryMsgQueueHandler(uint32_t CmdId) {
   char tx_para[] = "xxxx";
-  int free_bytes = 0;
-  free_bytes = MessageBytesFree();
-  sprintf(tx_para, "%i", free_bytes);  // Decimal
+  int free_slots = 0;
+  free_slots = MessageSlotsFree();
+  sprintf(tx_para, "%i", free_slots);  // Decimal
   ATRespond(AT_RESP_OK_START, Queries[CmdId], tx_para);
-  DEBUG_INFO("Free message bytes = %i\n", free_bytes);
+  DEBUG_INFO("Free message slots = %i\n", free_slots);
 }
 
 static void QueryStateHandler(uint32_t CmdId) {
@@ -173,7 +189,7 @@ static void QuerySuspendModeHandler(uint32_t CmdId) {
 }
 
 static void ControlSaveMsgHandler(uint32_t CmdId, const char *Para) {
-  if (strlen(Para) == 0) {
+  if (Para == NULL || strlen(Para) == 0) {
     SaveMessages();
     ATRespond(AT_RESP_OK_START, Controls[CmdId], NULL);
     DEBUG_INFO("Save message\n");
@@ -202,62 +218,64 @@ static void ControlTxStartHandler(uint32_t CmdId, const char *Para) {
   uint8_t tx_type;
   bool tx_burst;
   bool invalid_para = false;
-  if (strlen(Para) == 0) {
+  if (Para == NULL || strlen(Para) == 0) {
     ATRespond(AT_RESP_FAIL_START, Controls[CmdId], NULL);
     DEBUG_ERROR("RF TX test should have parameters\n");
-  } else {  // Use specified parameters
-    char buf[] = "400000000,0,0,999";
-    if (strlen(Para) > strlen(buf)) {
+    return;
+  }
+  // Use specified parameters
+  char buf[] = "400000000,0,0,999";
+  if (strlen(Para) > strlen(buf)) {
+    invalid_para = true;
+  } else {
+    strncpy(buf, Para, strlen(buf));
+  }
+  char *opt = NULL;
+  if (invalid_para || (opt = strtok(buf, ",")) == NULL) {
+    invalid_para = true;
+  } else {
+    tx_freq = (uint32_t)atoi(opt);
+    if (tx_freq == 0) invalid_para = true;
+  }
+  if (invalid_para || (opt = strtok(NULL, ",")) == NULL) {
+    invalid_para = true;
+  } else {
+    tx_type = (uint8_t)atoi(opt);
+    if (tx_type != TX_TYPE_TONE && tx_type != TX_TYPE_PRBS) {
       invalid_para = true;
-    } else {
-      strncpy(buf, Para, strlen(buf));
     }
-    char *opt = NULL;
-    if (invalid_para || (opt = strtok(buf, ",")) == NULL) {
+  }
+  if (invalid_para || (opt = strtok(NULL, ",")) == NULL) {
+    invalid_para = true;
+  } else {
+    tx_burst = atoi(opt);
+    if (tx_burst != 0 && tx_burst != 1) {
       invalid_para = true;
-    } else {
-      tx_freq = (uint32_t)atoi(opt);
-      if (tx_freq == 0) invalid_para = true;
     }
-    if (invalid_para || (opt = strtok(NULL, ",")) == NULL) {
+  }
+  uint32_t timeout;
+  if (invalid_para || (opt = strtok(NULL, ",")) == NULL) {
+    invalid_para = true;
+  } else {
+    timeout = atoi(opt) * 1000;
+    if (timeout == 0 || timeout > RF_TX_TIMEOUT_MAX) {
       invalid_para = true;
-    } else {
-      tx_type = (uint8_t)atoi(opt);
-      if (tx_type != TX_TYPE_TONE && tx_type != TX_TYPE_PRBS) {
-        invalid_para = true;
-      }
     }
-    if (invalid_para || (opt = strtok(NULL, ",")) == NULL) {
-      invalid_para = true;
+  }
+
+  if (!invalid_para) {
+    RFTestTxStop();
+    if (RFTestTxStart(tx_freq, tx_type, tx_burst)) {
+      ScheduleJob(KeepRFAwake, Never());
+      ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
+      DEBUG_ERROR("Radio transmit test failed\n");
     } else {
-      tx_burst = atoi(opt);
-      if (tx_burst != 0 && tx_burst != 1) {
-        invalid_para = true;
-      }
-    }
-    uint32_t timeout;
-    if (invalid_para || (opt = strtok(NULL, ",")) == NULL) {
-      invalid_para = true;
-    } else {
-      timeout = atoi(opt) * 1000;
-      if (timeout == 0 || timeout > RF_TX_TIMEOUT_MAX) {
-        invalid_para = true;
-      }
-    }
-    if (!invalid_para) {
-      RFTestTxStop();
-      if (RFTestTxStart(tx_freq, tx_type, tx_burst)) {
-        ScheduleJob(KeepRFAwake, Never());
-        ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
-        DEBUG_ERROR("Radio transmit test failed\n");
-      } else {
-        ATRespond(AT_RESP_OK_START, Controls[CmdId], Para);
-        DEBUG_INFO("Testing radio transmit: %i,%s,%s\n", (int)tx_freq,
-                   (tx_type ? "TX_TYPE_PRBS" : "TX_TYPE_TONE"),
-                   (tx_burst ? "true" : "false"));
-        SetRFTxTimeout(timeout);
-        ScheduleJob(KeepRFAwake, ASAP());
-      }
+      ATRespond(AT_RESP_OK_START, Controls[CmdId], Para);
+      DEBUG_INFO("Testing radio transmit: %i,%s,%s\n", (int)tx_freq,
+                 (tx_type ? "TX_TYPE_PRBS" : "TX_TYPE_TONE"),
+                 (tx_burst ? "true" : "false"));
+      SetRFTxTimeout(timeout);
+      ScheduleJob(KeepRFAwake, ASAP());
     }
   }
   if (invalid_para) {
@@ -267,7 +285,7 @@ static void ControlTxStartHandler(uint32_t CmdId, const char *Para) {
 }
 
 static void ControlTxStopHandler(uint32_t CmdId, const char *Para) {
-  if (strlen(Para) == 0) {
+  if (Para == NULL || strlen(Para) == 0) {
     ScheduleJob(KeepRFAwake, Never());
     RFTestTxStop();
     ATRespond(AT_RESP_OK_START, Controls[CmdId], NULL);
@@ -279,7 +297,7 @@ static void ControlTxStopHandler(uint32_t CmdId, const char *Para) {
 }
 
 static void ControlGnssFixHandler(uint32_t CmdId, const char *Para) {
-  if (strlen(Para) == 0) {
+  if (Para == NULL || strlen(Para) == 0) {
     ATRespond(AT_RESP_OK_START, Controls[CmdId], NULL);
     if (GNSSFix()) {
       ATRespond(AT_RESP_FAIL_START, Controls[CmdId], NULL);
@@ -298,7 +316,7 @@ static void ControlGnssFixHandler(uint32_t CmdId, const char *Para) {
 static void ControlRssiHandler(uint32_t CmdId, const char *Para) {
   int32_t rssi;
   char resp[] = "400000000";
-  if (strlen(Para) == 0) {
+  if (Para == NULL || strlen(Para) == 0) {
     ATRespond(AT_RESP_FAIL_START, Controls[CmdId], NULL);
     DEBUG_ERROR("No frequency specified for RSSI test\n");
   } else {
@@ -319,21 +337,21 @@ static void ControlScheduleMsgHandler(uint32_t CmdId, const char *Para) {
   int msg_len = 0;
   char msg[AT_MAX_PARA_LEN / 2 + 1] = {0};
   msg_len = ASCIIToHex(msg, Para);
-  if (msg_len > MAX_MESSAGE_SIZE) {
-    ATRespond(AT_RESP_FAIL_START, Controls[CmdId],
-              ErrorCodes[AT_ERROR_MESSAGE_TOO_LONG]);
-    DEBUG_ERROR("Message too long\n");
-  } else if (msg_len <= 0) {
+
+  if (msg_len <= 0) {
     ATRespond(AT_ERROR_START, NULL, ErrorCodes[AT_ERROR_INVALID_PARAMETER]);
     DEBUG_ERROR("Invalid parameter\n");
+
   } else {
     if (ScheduleMessage((uint8_t *)msg, msg_len) >= 0) {
       ATRespond(AT_RESP_OK_START, Controls[CmdId], Para);
+
       DEBUG_INFO("Scheduled message: ");
       for (int i = 0; i < msg_len; i++) {
-        DEBUG_INFO("%02x", msg[i]);
+        DEBUG_INFO("%02X", (uint8_t)msg[i]);
       }
       DEBUG_INFO("\n");
+
     } else {
       ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
     }
@@ -341,7 +359,7 @@ static void ControlScheduleMsgHandler(uint32_t CmdId, const char *Para) {
 }
 
 static void ControlSuspendMode(uint32_t CmdId, const char *Para) {
-  if (strlen(Para) == 0) {
+  if (Para == NULL || strlen(Para) == 0) {
     ATRespond(AT_RESP_FAIL_START, Controls[CmdId], NULL);
     DEBUG_ERROR("No parameter speficified, 0 to enter and 1 to exit\n");
   } else {
@@ -368,7 +386,7 @@ static void ControlSuspendMode(uint32_t CmdId, const char *Para) {
 
 static void ControlTimeHandler(uint32_t CmdId, const char *Para) {
   char resp[] = "1672531200";
-  if (strlen(Para) == 0 || strlen(Para) > 10) {
+  if (Para == NULL || strlen(Para) == 0 || strlen(Para) > 10) {
     ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
     DEBUG_ERROR("No time specified or time format is wrong\n");
   } else {
@@ -390,25 +408,28 @@ static void ControlLocationHandler(uint32_t CmdId, const char *Para) {
   char para[AT_MAX_PARA_LEN] = {0};
   char *p = para;
   int32_t lat, lon;
-  memcpy(para, Para, strlen(Para));
-  if (strstr(p, ",") != NULL) {
-    strtok(p, ",");
-    lat = atoi(p);
-    if ((strlen(p) == 1 && p[0] == '0') ||
-        (lat != 0 && lat >= -900000000 && lat <= 900000000)) {
-      p = strtok(NULL, ",");
-      lon = atoi(p);
+  if (Para != NULL) {
+    memcpy(para, Para, strlen(Para));
+    if (strstr(p, ",") != NULL) {
+      strtok(p, ",");
+      lat = atoi(p);
       if ((strlen(p) == 1 && p[0] == '0') ||
-          (lon != 0 && lon >= -1800000000 && lon <= 1800000000)) {
-        LocationSet(lat, lon);
-        LocationGet(&lat, &lon, NULL);
-        sprintf(resp, "%i,%i", (signed)lat, (signed)lon);
-        ATRespond(AT_RESP_OK_START, Controls[CmdId], resp);
-        DEBUG_INFO("Set location = %s\n", Para);
-        return;
+          (lat != 0 && lat >= -900000000 && lat <= 900000000)) {
+        p = strtok(NULL, ",");
+        lon = atoi(p);
+        if ((strlen(p) == 1 && p[0] == '0') ||
+            (lon != 0 && lon >= -1800000000 && lon <= 1800000000)) {
+          LocationSet(lat, lon);
+          LocationGet(&lat, &lon, NULL);
+          sprintf(resp, "%i,%i", (signed)lat, (signed)lon);
+          ATRespond(AT_RESP_OK_START, Controls[CmdId], resp);
+          DEBUG_INFO("Set location = %s\n", Para);
+          return;
+        }
       }
     }
   }
+
   ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
   DEBUG_ERROR("Invalid format for location setting\n");
 }
@@ -482,7 +503,7 @@ static bool ProcessControl(char *CmdStr, const char *Para) {
 
 static int ATCmdProcess(char *Cmd, const char *Para) {
   bool ret_query, ret_control;
-  if (memcmp(Para, AT_QUERY, strlen(AT_QUERY)) == 0) {
+  if (Para != NULL && memcmp(Para, AT_QUERY, strlen(AT_QUERY)) == 0) {
     ret_query = ProcessQuery(Cmd);
     if (!ret_query) {
       DEBUG_ERROR("Unknown query command\n");
@@ -498,11 +519,12 @@ static int ATCmdProcess(char *Cmd, const char *Para) {
   return 0;
 }
 
-void ATProcess(char *Input, int Len) {
+void ATProcess(char *Input, const int Len) {
   bool invalid_cmd;
   char *input_start = Input;
   char *cmd_start = Input, *cmd_end = Input;
   const char *input_end = Input + Len - 1;
+
   // Process all commands in the input string
   while (input_start <= input_end) {
     invalid_cmd = false;
@@ -525,6 +547,7 @@ void ATProcess(char *Input, int Len) {
       invalid_cmd = true;
       DEBUG_ERROR("Command too short\n");
     }
+
     if (invalid_cmd == false) {
       *cmd_end = '\0';
       if (memcmp(cmd_start, AT_AT, strlen(AT_AT)) == 0) {
@@ -536,20 +559,19 @@ void ATProcess(char *Input, int Len) {
           input_start = cmd_end + 1;
           continue;
         }
+
         char *cmd = cmd_start + strlen(AT_CMD_START);
-        char para[AT_MAX_PARA_LEN + 1] = {0};
-        if (strstr(cmd, "=") != NULL) {
-          strtok(cmd, "=");
+        char *para = strstr(cmd, "=");
+        if (para != NULL) {
+          *para = '\0';  // turn '=' to nullstr
+          para++;
           if (strlen(cmd) > AT_MAX_CMD_LEN) {
             invalid_cmd = true;
             DEBUG_ERROR("Command too long\n");
           }
-          char *p = strtok(NULL, "=");
-          if (strlen(p) > AT_MAX_PARA_LEN) {
+          if (strlen(para) > AT_MAX_PARA_LEN) {
             invalid_cmd = true;
             DEBUG_ERROR("Parameter too long\n");
-          } else {
-            strcpy(para, p);
           }
         }
         if (invalid_cmd == false) {
@@ -564,6 +586,7 @@ void ATProcess(char *Input, int Len) {
       ATRespond(AT_ERROR_START, NULL, ErrorCodes[AT_ERROR_INVALID_COMMAND]);
     }
     if (cmd_end == input_end) break;
+
     input_start = cmd_end + 1;
   }
 }

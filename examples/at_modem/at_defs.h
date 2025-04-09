@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2022, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2020-2025, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -27,7 +27,7 @@
 #define AT_RESP_END "\r\n"
 
 #define AT_MAX_CMD_LEN 10
-#define AT_MAX_PARA_LEN (MAX_MESSAGE_SIZE * 2)
+#define AT_MAX_PARA_LEN (3000)  // Constrained by max message size supported
 #define AT_MIN_RX_SIZE (strlen(AT_AT))
 
 enum {
@@ -58,6 +58,7 @@ enum {
 enum {
   AT_ERROR_INVALID_PARAMETER = 0,
   AT_ERROR_MESSAGE_TOO_LONG,
+  AT_ERROR_TOO_MANY_MESSAGES,
   AT_ERROR_BUFFER_OVERFLOW,
   AT_ERROR_UNKNOWN_QUERY_CMD,
   AT_ERROR_UNKNOWN_CONTROL_CMD,
@@ -75,8 +76,9 @@ static const char* Controls[] = {"SAVEMSG", "TXSTART", "TXSTOP",
                                  "SUSPEND", "TIME",    "LOCATION"};
 
 static const char* ErrorCodes[] = {
-    "INVALID_PARAMETER", "MESSAGE_TOO_LONG",    "BUFFER_OVERFLOW",
-    "UNKNOWN_QUERY_CMD", "UNKNOWN_CONTROL_CMD", "INVALID_COMMAND",
+    "INVALID_PARAMETER", "MESSAGE_TOO_LONG",  "TOO_MANY_MESSAGES",
+    "BUFFER_OVERFLOW",   "UNKNOWN_QUERY_CMD", "UNKNOWN_CONTROL_CMD",
+    "INVALID_COMMAND",
 };
 
 static const char* States[] = {

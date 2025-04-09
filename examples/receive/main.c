@@ -60,7 +60,8 @@ static time_t ReceiveJob(void) {
   tx_msg.time = TimeGet();
   ScheduleMessage((void *)&tx_msg, sizeof(tx_msg));
 
-  printf("%" PRIu32 " Scheduled message from ReceiveJob: %" PRIu16 "\n",
+  printf("%" PRIu32 " Scheduled message from ReceiveJob: count_rx=%" PRIu16
+         "\n",
          tx_msg.time, tx_msg.count_rx);
 
   return OnReceiveMessage();  // wait for next event
@@ -72,7 +73,8 @@ static time_t TransmitJob(void) {
   tx_msg.time = TimeGet();
   ScheduleMessage((void *)&tx_msg, sizeof(tx_msg));
 
-  printf("%" PRIu32 " Scheduled message from TransmitJob: %" PRIu16 "\n",
+  printf("%" PRIu32 " Scheduled message from TransmitJob: count_rx=%" PRIu16
+         "\n",
          tx_msg.time, tx_msg.count_rx);
 
   return now + 24 * 3600 / MESSAGE_PER_DAY;

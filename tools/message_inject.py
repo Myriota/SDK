@@ -15,11 +15,9 @@
 
 
 import myriota_auth
-from datetime import datetime
 import json
 import requests
 import sys
-import time
 
 _domain = "https://api.myriota.com/v1"
 
@@ -55,9 +53,7 @@ def do_inject(idtoken, moduleid):
 
 def main(argv=None):
     """CLI entrypoint"""
-    import getpass
     import argparse
-    import os
     import sys
 
     parser = argparse.ArgumentParser(

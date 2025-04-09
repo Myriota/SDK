@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2021-2025, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -48,14 +48,33 @@ Resources:
 
           def unpack(packet, module_id, env):
             message_table = (boto3.resource("dynamodb").Table(env["message_table"]))
-            num, lat, lon, timestamp = struct.unpack("<HiiI", bytearray.fromhex(packet[0:28]))
+            packet_byte = bytearray.fromhex(packet)
+            locations = []
+            offset = 0
+            sequence_number = struct.unpack("<H", packet_byte[offset : offset + 2])[0]
+            offset += 2
+            location_count = struct.unpack("<B", packet_byte[offset : offset + 1])[0]
+            offset += 1
+            location_sz = 12  # latitude (4 bytes), longitude (4 bytes), timestamp (4 bytes)
+            for _ in range(location_count):
+              lat, lon, timestamp = struct.unpack(
+                "<iiI", packet_byte[offset : offset + location_sz]
+              )
+              offset += location_sz
+              locations.append(
+                {
+                    "Latitude": Decimal(str(lat / 1e7)),
+                    "Longitude": Decimal(str(lon / 1e7)),
+                    "Timestamp": timestamp,
+                }
+              )
             message_table.put_item(
               Item={
                 "ModuleId": module_id,
-                "Timestamp": timestamp,
-                "Latitude": Decimal(str(lat / 1e7)),
-                "Longitude": Decimal(str(lon / 1e7)),
-                "SequenceNumber": num,
+                "Timestamp": locations[-1]["Timestamp"],
+                "SequenceNumber": sequence_number,
+                "LocationCount": location_count,
+                "Locations": locations,
               }
             )
 

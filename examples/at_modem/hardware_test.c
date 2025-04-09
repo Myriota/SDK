@@ -1,4 +1,4 @@
-// Copyright (c) 2021, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2021-2025, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -37,12 +37,12 @@
 static void *GNSSHandle = NULL;
 static char NMEASentence[NMEA_BUF_LENGTH];
 
-bool IsTestMode(uint32_t Timeout) {
+bool IsTestMode(const uint32_t Timeout) {
   char rx[TEST_COMMAND_LEN + 1] = {0};
   uint32_t start_tick = TickGet();
   int total_len = 0;
   while (TickGet() <= start_tick + Timeout && total_len < TEST_COMMAND_LEN) {
-    total_len += ATReceive(rx + total_len, TEST_COMMAND_LEN - total_len);
+    total_len += ATReceiveTimeout(rx + total_len, TEST_COMMAND_LEN - total_len);
     if (strstr(rx, MODEM_TEST_STR) != NULL) {
       return true;
     }
@@ -84,7 +84,7 @@ static bool NMEAChecksumCheck(const char *Sentence) {
   for (char *Str = (char *)Sentence; Str < checksum_start; Str++) {
     checksum ^= *Str;
   }
-  char checksum_str[NMEA_CHECKSUM_LEN + 1] = {0};
+  char checksum_str[NMEA_CHECKSUM_LEN * 2 + 1] = {0};
   snprintf(checksum_str, sizeof(checksum_str), "%02" PRIX16, checksum);
   // XXX assuming upper case in NMEA sentence
   if (strcmp(checksum_str, checksum_start + 1) == 0)

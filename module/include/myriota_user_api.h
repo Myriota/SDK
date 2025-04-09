@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -92,18 +92,16 @@ time_t BeforeSatelliteTransmit(time_t After, time_t Before);
 /// @defgroup User_message User message
 /// @{
 
-/// Maximum size in bytes of individual transmit message.
-#define MAX_MESSAGE_SIZE 20
 /// Schedule a message of bytes of given size for transmission.
-/// The maximum message size is given by #MAX_MESSAGE_SIZE.
-/// Regardless of the value of \p MessageSize the number bytes
-/// consumed is MAX_MESSAGE_SIZE. Calling ScheduleMessage when the
-/// number of bytes returned by MessageBytesFree is less than MAX_MESSAGE_SIZE
-/// replaces an existing message in the queue. This may result in dropped
-/// messages. See also MessageBytesFree. Returns >=0 when succeeded or <0 if
-/// failed.
+/// Calling ScheduleMessage when the number of slots returned by
+/// MessageSlotsFree is 0 replaces an existing message in the queue. This may
+/// result in dropped messages. See also MessageSlotsFree. Returns >=0 when
+/// succeeded or <0 if failed.
 int ScheduleMessage(const uint8_t *Message, size_t MessageSize);
-/// Returns number of bytes remaining in internal queue, that is,
+/// Returns the number of available slots in the internal queue,
+/// that is, the number of messages that can be scheduled with ScheduleMessage.
+int MessageSlotsFree(void);
+/// Returns number of bytes remaining in the internal queue, that is,
 /// the number of bytes that can be scheduled with ScheduleMessage.
 size_t MessageBytesFree(void);
 /// Save all messages in the message queue to module's persistent storage.
@@ -111,6 +109,9 @@ size_t MessageBytesFree(void);
 void SaveMessages(void);
 /// Clear all messages in the message queue.
 void MessageQueueClear(void);
+/// Maximum size in bytes of individual transmit message.
+/// This constant is DEPRECATED and should not be used.
+#define MAX_MESSAGE_SIZE 20
 
 /// @}
 

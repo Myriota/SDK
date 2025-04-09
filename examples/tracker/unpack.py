@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -16,9 +16,9 @@
 
 # Unpacker for the tracker example.
 # Usage:
-# unpack.py -x 0000aea02feb06fe9d52b89f3e5ccccccccccccccc
+# unpack.py -x 01000130de2eebb0239d525f827266cccccccccc
 # or
-# echo "0000aea02feb06fe9d52b89f3e5ccccccccccccccc" | unpack.py
+# echo "01000130de2eebb0239d525f827266cccccccccc" | unpack.py
 
 import argparse
 import struct
@@ -27,13 +27,39 @@ import fileinput
 
 
 def unpack(packet):
-    num, lat, lon, timestamp = struct.unpack("<HiiI", bytearray.fromhex(packet[0:28]))
+    packet_byte = bytearray.fromhex(packet)
+    locations = []
+    offset = 0
+
+    # Unpack the sequence number (2 bytes)
+    sequence_number = struct.unpack("<H", packet_byte[offset : offset + 2])[0]
+    offset += 2
+
+    # Unpack the number of locations (1 byte)
+    location_count = struct.unpack("<B", packet_byte[offset : offset + 1])[0]
+    offset += 1
+
+    location_sz = 12  # latitude (4 bytes), longitude (4 bytes), timestamp (4 bytes)
+    # Unpack the location array
+    for _ in range(location_count):
+        # Unpack single location
+        lat, lon, timestamp = struct.unpack(
+            "<iiI", packet_byte[offset : offset + location_sz]
+        )
+        offset += location_sz
+        locations.append(
+            {
+                "Latitude": lat / 1e7,
+                "Longitude": lon / 1e7,
+                "Timestamp": timestamp,
+            }
+        )
+
     return [
         {
-            "Sequence number": num,
-            "Latitude": lat / 1e7,
-            "Longitude": lon / 1e7,
-            "Timestamp": timestamp,
+            "Sequence number": sequence_number,
+            "Location count": location_count,
+            "Locations": locations,
         }
     ]
 

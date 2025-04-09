@@ -30,7 +30,7 @@ if [[ $OSTYPE == 'linux'* ]]; then
   curl -O https://downloads.myriota.com/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
   sudo mkdir -p ${CROSS_COMPILER_PATH}
   sudo tar -xf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz -C ${CROSS_COMPILER_PATH} --strip-components=1
-  sudo cp module/g2/99-myriota-g2.rules /etc/udev/rules.d
+  sudo cp module/99-myriota.rules /etc/udev/rules.d
   sudo udevadm control --reload-rules && sudo udevadm trigger
 
   # Tools useful for host simulator

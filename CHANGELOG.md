@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.1.0
+
+API changes:
+
+- Adds `MessageSlotsFree` API to return the number of messages that can be scheduled in the message queue
+- Deprecates `MAX_MESSAGE_SIZE` constant
+
+Improvements:
+
+- Adds support to transmit messages larger than 20 bytes
+- Updates [at modem application](examples/at_modem/README.md) to transmit messages larger than 20 bytes
+- Updates [tracker example application](examples/tracker) to transmit messages larger than 20 bytes
+- Extends [tools/updater.py](tools/updater.py) to support Myriota FlexSense
+- Removes unused imports from various python scripts
+- Updates the flash memory start address of the user application
+
 ## 2.0.1
 
 Improvements:

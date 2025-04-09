@@ -16,14 +16,12 @@
 
 from __future__ import print_function
 import argparse
-import binascii
 import os
 import shutil
 import signal
 import struct
 import sys
 import tempfile
-import time
 
 file_types = {
     1: "system image",

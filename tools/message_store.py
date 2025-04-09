@@ -14,11 +14,9 @@
 # limitations under the License.
 
 import sys
-from datetime import datetime
 import myriota_auth
 import requests
 import json
-import time
 
 _domain = "https://api.myriota.com/v1"
 
@@ -40,7 +38,6 @@ def do_query(idtoken, moduleid, range_from=None, limit=None):
 
 def main(argv=None, auth=myriota_auth.auth):
     """CLI entrypoint."""
-    import getpass
     import argparse
     import os
 

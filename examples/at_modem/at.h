@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2020-2025, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -36,9 +36,10 @@
 
 #define UART_INTERFACE LEUART
 #define UART_BAUDRATE 9600
-#define UART_MAX_TX_SIZE 60
-#define UART_MAX_RX_SIZE 80
-#define RECEIVE_TIMEOUT 200  // [ms]
+// Large enough to hold AT_MAX_CMD_LEN, AT_MAX_PARA_LEN and sizeof("\r")
+#define UART_MAX_RX_SIZE 3012
+#define UART_MAX_TX_SIZE 3012
+#define RECEIVE_TIMEOUT 100  // [ms]
 
 #define RF_TX_TIMEOUT_MAX 999000  // [ms]
 #define VHF_TX_DEFAULT_FREQUENCY 161450000
@@ -74,15 +75,22 @@ void ATSetState(SysStates St);
 
 int ATInit();
 
-size_t ATReceive(char *Rx, size_t MaxLength);
+// Receive for maximum of RECEIVE_TIMEOUT ms, stop when isspace() is received
+size_t ATReceiveTimeout(char *Rx, const size_t MaxLength);
 
-void ATSend(char *Tx);
+// Receive for MaxLength chars, stop when
+// * Buffer is full
+// * Nothing received for RECEIVE_TIMEOUT ms
+// * isspace() is received
+size_t ATReceive(char *Rx, const size_t MaxLength);
 
-void ATProcess(char *Start, int Len);
+void ATSend(const char *Tx);
+
+void ATProcess(char *Start, const int Len);
 
 time_t KeepRFAwake();
 
-bool IsTestMode(uint32_t);
+bool IsTestMode(const uint32_t timeout);
 
 void HardwareTest();
 
