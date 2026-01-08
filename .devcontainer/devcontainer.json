@@ -1,5 +1,5 @@
 {
-    "image":"mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
     "onCreateCommand": "bash install.sh",
     "remoteEnv": {
         "PATH": "${containerEnv:PATH}:${containerWorkspaceFolder}/tools:/opt/gcc-arm/bin"

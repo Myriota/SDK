@@ -38,77 +38,79 @@
 
 - Command
 
-`AT`
+    `AT`
 
 - Response
 
-`OK`
+    `OK`
 
 ### Queries
 
 - Command
 
-`AT+<CMD>=?`
+    `AT+<CMD>=?`
 
 - Response
 
-Success: `OK+<CMD>=<VALUE>`
+    Success: `OK+<CMD>=<VALUE>`
 
-Failure: `FAIL+<CMD>=<VALUE>`
+    Failure: `FAIL+<CMD>=<VALUE>`
 
 - Query command list
 
-| Command           | Command string | Return              | Note                        |
-|-------------------|----------------|---------------------|-----------------------------|
-| Message queue     | MSGQ     | Number of free slots in the message queue | - |
-| System state      | STATE    | INITIALIZING, GNSS_ACQ or READY | Refer to power up logic |
-| SDK version       | VSDK     | SDK version | Format: major.minor.patch |
-| Module ID         | MID      | Module ID and part number | E.g. 0012345678 M1-24 |
-| Registration code | REGCODE  | Registration code | - |
-| Get time          | TIME     | Unix epoch time | E.g. 1672531200 |
-| Get location      | LOCATION | Latitude and longitude of last GNSS fix, scaled by 1e7 | E.g. -349205499,1386086737 |
-| Get suspend mode  | SUSPEND  | 0: disabled, 1:enabled | - |
+    | Command           | Command string | Return              | Note                        |
+    |-------------------|----------------|---------------------|-----------------------------|
+    | Message queue     | MSGQ     | Number of free slots in the message queue | - |
+    | System state      | STATE    | INITIALIZING, GNSS_ACQ or READY | Refer to power up logic |
+    | SDK version       | VSDK     | SDK version | Format: major.minor.patch |
+    | Module ID         | MID      | Module ID and part number | E.g. 0012345678 M1-24 |
+    | Registration code | REGCODE  | Registration code | - |
+    | Get time          | TIME     | Unix epoch time | E.g. 1672531200 |
+    | Get location      | LOCATION | Latitude and longitude of last GNSS fix, scaled by 1e7 | E.g. -349205499,1386086737 |
+    | Get suspend mode  | SUSPEND  | 0: disabled, 1:enabled | - |
+    | Message queue status | MSGQS | Transmission status of messages in the message queue | - |
 
 ### Controls
 
 - Command
 
-Without parameter: `AT+<CMD>`
+    Without parameter: `AT+<CMD>`
 
-With parameter: `AT+<CMD>=<PARAMETER>`
+    With parameter: `AT+<CMD>=<PARAMETER>`
 
 - Response
 
-Success: `OK+<CMD>` or `OK+<CMD>=<PARAMETER>`
+    Success: `OK+<CMD>` or `OK+<CMD>=<PARAMETER>`
 
-Failure: `FAIL+<CMD>` or `FAIL+<CMD>=<PARAMETER>`
+    Failure: `FAIL+<CMD>` or `FAIL+<CMD>=<PARAMETER>`
 
 - Control command list
 
-| Command               | Command string | Parameter           | Note                        |
-|-----------------------|----------------|---------------------|-----------------------------|
-| Save message queue    | SAVEMSG  | N/A | Save message queue before hardware reset or power cycle |
-| Start RF TX test      | TXSTART  | Refer to RF TX parameter below | Return "OK+TXSTART=PARAMETER" first, then return "OK+TXSTART" after timeout |
-| Stop RF TX test       | TXSTOP   | N/A | - |
-| Start GNSS fix        | GNSSFIX  | N/A | Return OK immediately then return OK again when successful or return FAIL after 90s timeout |
-| RSSI test             | RSSI     | Frequency in Hz. E.g. 400000000 | Return "OK+TXSTART=RSSI" in dBm on the specified frequency |
-| Schedule message      | SMSG     | Hex string of the message | The length should be even |
-| Change suspend mode   | SUSPEND  | 1 to enable and 0 to disable | - |
-| Set time              | TIME     | Unix epoch time | E.g. 1715584647 |
-| Set location          | LOCATION | Latitude and longitude to be set, scaled by 1e7 | E.g. -349205499,1386086737 |
+    | Command               | Command string | Parameter           | Note                        |
+    |-----------------------|----------------|---------------------|-----------------------------|
+    | Save message queue    | SAVEMSG  | N/A | Save message queue before hardware reset or power cycle |
+    | Start RF TX test      | TXSTART  | Refer to RF TX parameter below | Return "OK+TXSTART=PARAMETER" first, then return "OK+TXSTART" after timeout |
+    | Stop RF TX test       | TXSTOP   | N/A | - |
+    | Start GNSS fix        | GNSSFIX  | N/A | Return OK immediately then return OK again when successful or return FAIL after 90s timeout |
+    | RSSI test             | RSSI     | Frequency in Hz. E.g. 400000000 | Return "OK+TXSTART=RSSI" in dBm on the specified frequency |
+    | Schedule message      | SMSG     | Hex string of the message | The length should be even |
+    | Change suspend mode   | SUSPEND  | 1 to enable and 0 to disable | - |
+    | Set time              | TIME     | Unix epoch time | E.g. 1715584647 |
+    | Set location          | LOCATION | Latitude and longitude to be set, scaled by 1e7 | E.g. -349205499,1386086737 |
+    | Delete message from queue | MSGQD    | Deletes a message from the queue by its message ID | - |
 
 - RF TX parameter
 
-Format: `<FREQUENCY>,<TX_TYPE>,<BURST_MODE>,<TIMEOUT>`
+    Format: `<FREQUENCY>,<TX_TYPE>,<BURST_MODE>,<TIMEOUT>`
 
-E.g. AT+TXSTART=161450000,0,1,60
+    E.g. AT+TXSTART=161450000,0,1,60
 
-| Parameter  | Values    |
-|------------|-----------|
-| Frequency  | In Hz. E.g. 161450000 / 400000000 |
-| TX type    | 0 - Tone(CW), 1 - PRBS Mode |
-| Burst mode | 0 - Continuous Mode, 1 - Burst Mode |
-| Timeout    | 0 to 999 in seconds |
+    | Parameter  | Values    |
+    |------------|-----------|
+    | Frequency  | In Hz. E.g. 161450000 / 400000000 |
+    | TX type    | 0 - Tone(CW), 1 - PRBS Mode |
+    | Burst mode | 0 - Continuous Mode, 1 - Burst Mode |
+    | Timeout    | 0 to 999 in seconds |
 
 ### Error codes
 
@@ -168,11 +170,11 @@ This mode can be used to quickly verify AT command protocol. "Timeout!" will be 
 
 1. Build the modem example application in the host simulator mode.
 
-`make clean; MODULE=g2/sim make`
+    `make clean; MODULE=g2/sim make`
 
 2. Run the test script.
 
-`mkdir -p obj; >obj/debug.log >obj/modem.log; ./at_test.sh "./at_modem 1>obj/debug.log" obj/modem.log`
+    `mkdir -p obj; >obj/debug.log >obj/modem.log; ./at_test.sh "./at_modem 1>obj/debug.log" obj/modem.log`
 
 Two log files will be generated in the `obj` folder.
 
@@ -182,19 +184,19 @@ GNSS fix will be skipped in this mode.
 
 1. Build the modem example application in Lab Mode.
 
-`make clean; LAB_TEST=1 make`
+    `make clean; LAB_TEST=1 make`
 
 2. Program the board.
 
-`updater.py -u at_modem.bin -p <PORT> -s`
+    `updater.py -u at_modem.bin -p <PORT> -s`
 
-`<PORT>` is the programming port. E.g. `updater.py -u at_modem.bin -p /dev/ttyUSB0 -s`
+    `<PORT>` is the programming port. E.g. `updater.py -u at_modem.bin -p /dev/ttyUSB0 -s`
 
 3. Run the test script and reset the board.
 
-`./at_test.sh <PORT>`
+    `./at_test.sh <PORT>`
 
-`<PORT>` is the AT communication port. E.g. `./at_test.sh /dev/ttyUSB1`
+    `<PORT>` is the AT communication port. E.g. `./at_test.sh /dev/ttyUSB1`
 
 ## Modem hardware testing example
 
@@ -225,3 +227,46 @@ Test results are output to both modem communication interface and serial debug i
 ## Disable module GNSS fix
 
 It can be achieved by setting the `DISABLE_GNSS_FIX` macro to `1` in `main.c`. The GNSS fix process will be skipped and the time and location will be set to initial values. The host will need to feed the real time and location into the module using the time and location control commands.
+
+## at_client.py
+
+The `at_client.py` tool provides a simple host-side controller for testing and debugging AT Modem firmware. It supports both Myriota Ultralite Developer Toolkit and custom hardware, offering features such as message scheduling and raw AT-command interaction.
+
+### Key Features
+
+- **Cross-platform**: Supports Windows, Linux, and Pi.
+- **Compatibility**: Supports `at_modem_v2.1.0` and later, including `skip_gnssfix` variant.
+- **Simulated Scheduler**: Sends 3 tracker messages per day by default, each containing 1 location.
+- **Raw AT Command Support**: Enables raw AT command interaction for debugging.
+
+### Usage Examples
+
+- Run tracker mode using the skip_gnss firmware, with port auto-detection enabled and a default rate of 3 messages per day.
+
+    `python at_client.py --tracker --skip-gnss`
+
+- Send 8 tracker messages using the gnssfix enabled firmware on Linux
+
+    `python at_client.py --tracker 8 --port /dev/ttyUSB0`
+
+- Run raw AT command mode on COM3 under Windows
+
+    `python at_client.py --raw --port COM3`
+
+### Message Format
+
+| Field name        | Type     | Scale / Meaning                          | Example value               |
+| ----------------- | -------- | ---------------------------------------- | --------------------------- |
+| `sequence_number` | uint16_t | Sequence Number                          | `42`                        |
+| `location_count`  | uint8_t  | Location number in the message           | `1`                        |
+| `latitude`        | int32_t  | Scaled by **1e⁷** (degrees × 10,000,000) | `-891234567` → −89.1234567° |
+| `longitude`       | int32_t  | Scaled by **1e⁷**                        | `1791234567` → 179.1234567° |
+| `time`            | uint32_t | Unix epoch timestamp of last fix         | `1715584647`                |
+
+### Message Decoding
+
+The message can be decoded using the tracker example's [unpack.py](https://github.com/Myriota/SDK/blob/master/examples/tracker/unpack.py).
+
+### Important
+- **Firmware**: Use `at_modem_v2.1.0.bin` or later for the gnssfix enabled version or `at_modem_skip_gnssfix_v2.1.0.bin` or later with `-g 0` for skip-GNSS version.
+- **Operation**: The host machine must remain active to avoid disrupting message scheduling.

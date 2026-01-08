@@ -92,11 +92,13 @@ time_t BeforeSatelliteTransmit(time_t After, time_t Before);
 /// @defgroup User_message User message
 /// @{
 
-/// Schedule a message of bytes of given size for transmission.
-/// Calling ScheduleMessage when the number of slots returned by
-/// MessageSlotsFree is 0 replaces an existing message in the queue. This may
-/// result in dropped messages. See also MessageSlotsFree. Returns >=0 when
-/// succeeded or <0 if failed.
+/// Schedule a message of the given size for transmission.
+/// Returns a message ID (>=0) when successfully scheduled, or <0 on failure.
+/// Calling ScheduleMessage when MessageSlotsFree returns 0 replaces an existing
+/// message in the queue, which may result in dropped messages. See also
+/// MessageSlotsFree. Message IDs are sequential unsigned 16-bit integers and
+/// start at zero. IDs are guaranteed to be unique across messages that are in
+/// the queue at any given time (IDs wrap after 65535).
 int ScheduleMessage(const uint8_t *Message, size_t MessageSize);
 /// Returns the number of available slots in the internal queue,
 /// that is, the number of messages that can be scheduled with ScheduleMessage.
@@ -104,11 +106,37 @@ int MessageSlotsFree(void);
 /// Returns number of bytes remaining in the internal queue, that is,
 /// the number of bytes that can be scheduled with ScheduleMessage.
 size_t MessageBytesFree(void);
+/// Returns the maximum number of message slots available in the internal
+/// message queue. This value represents the total capacity of the queue,
+/// independent of how many slots are currently free.
+int MessageSlotsMax(void);
 /// Save all messages in the message queue to module's persistent storage.
 /// Saved messages will be transmitted after reset.
 void SaveMessages(void);
 /// Clear all messages in the message queue.
 void MessageQueueClear(void);
+
+/// Message transmission status
+typedef enum {
+  TRANSMIT_PENDING,   ///< Message not yet transmitted
+  TRANSMIT_ONGOING,   ///< Message is currently being transmitted
+  TRANSMIT_COMPLETE,  ///< Message fully transmitted
+  TRANSMIT_EXPIRED,   ///< Message expired before completion
+} MessageTransmitStatus_t;
+
+/// Status information for a message in the uplink queue
+typedef struct {
+  uint16_t id;                     ///< id returned by ScheduleMessage API
+  MessageTransmitStatus_t status;  ///< status of the message
+} MessageStatus_t;
+/// Returns the status of messages in the message queue.
+/// Fills up to status_count entries in the status array.
+/// Returns the number of entries written, or -1 if invalid input.
+int MessageQueueStatus(MessageStatus_t *status, const int status_count);
+/// Deletes a message from the message queue based on its message ID.
+/// Returns 0 if the message was successfully deleted, or -1 if the ID was not
+/// found.
+int MessageQueueDelete(const uint16_t message_id);
 /// Maximum size in bytes of individual transmit message.
 /// This constant is DEPRECATED and should not be used.
 #define MAX_MESSAGE_SIZE 20

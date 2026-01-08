@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -67,11 +67,11 @@ ifneq (,$(findstring $(BSP_PATH)/bsp.c,$(APP_SRC)))
 endif
 ifeq (0, $(BUILD_WITH_NETWORKINFO))
 	@mkdir -p $(RAW_BINARY_DIR);
-	@cp -u $(NETWORK_INFO_DIR)/$(SATELLITES) $(RAW_BINARY_DIR)/$(LATEST_NETWORK_INFO).bin
-	@mv -u $(PROGRAM_RAW_BIN) $(RAW_BINARY_DIR)/$(PROGRAM_RAW_BIN)
+	@cp $(NETWORK_INFO_DIR)/$(SATELLITES) $(RAW_BINARY_DIR)/$(LATEST_NETWORK_INFO).bin
+	@mv $(PROGRAM_RAW_BIN) $(RAW_BINARY_DIR)/$(PROGRAM_RAW_BIN)
 	$(ROOTDIR)/tools/merge_binary.py -n $(RAW_BINARY_DIR)/$(LATEST_NETWORK_INFO).bin -u $(RAW_BINARY_DIR)/$(PROGRAM_RAW_BIN) -o $@
 else
-	@mv -u $(PROGRAM_RAW_BIN) $(APPLICATION_NETWORKINFO_BIN)
+	@mv $(PROGRAM_RAW_BIN) $(APPLICATION_NETWORKINFO_BIN)
 endif
 	@echo "Build has completed!"
 

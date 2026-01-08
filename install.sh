@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -19,12 +19,14 @@ if [[ $OSTYPE == 'linux'* ]]; then
   sudo apt-get -y update
 
   # Myriota Development Board requirements
-  if $(cat /etc/os-release | grep -q "Ubuntu 2.\.04"); then
-    sudo apt-get -y install make curl python3 python3-pip python-is-python3
-    sudo -H pip3 install -r requirements.txt
+  if $(cat /etc/os-release | grep -q "Ubuntu 2[2-9]\.04"); then
+    sudo apt-get -y install make curl python3 python3-pip python-is-python3 python3-venv
+    python3 -m venv ~/.venvs/myriota_sdk
+    source ~/.venvs/myriota_sdk/bin/activate
+    pip3 install -r requirements.txt
   else
     echo -e "\t======================================================================="
-    echo -e "\tWARNING: Ubuntu 18.04 and under are not supported."
+    echo -e "\tWARNING: Ubuntu 20.04 and under are not supported."
     echo -e "\t======================================================================="
   fi
   curl -O https://downloads.myriota.com/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
@@ -40,23 +42,11 @@ if [[ $OSTYPE == 'linux'* ]]; then
   sudo apt-get -y install expect
 elif [[ $OSTYPE == 'darwin'* ]]; then
   echo "SDK Installation on macOS"
-  # check if installation of homebrew necessary
-  if [ -z $(which brew) ]; then
-    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    echo "Homebrew has been installed"
-    echo "You must run the Homebrew command, brew doctor, and resolve any issues before"
-    echo "Running the Myriota SDK install script again"
-    exit 1
-  fi
 
   # Myriota Development Board requirements
-  brew install make curl python3 coreutils expect
+  python3 -m venv ~/.venvs/myriota_sdk
+  source ~/.venvs/myriota_sdk/bin/activate
   pip3 install -r requirements.txt
-
-  echo "Change symlink for relevant tools"
-  ln -sf /usr/local/bin/python3 /usr/local/bin/python
-  ln -sf /usr/local/opt/coreutils/libexec/gnubin/cp /usr/local/bin/cp
-  ln -sf /usr/local/opt/coreutils/libexec/gnubin/mv /usr/local/bin/mv
 
   echo "Install ARM compiler"
   if [[ $(uname -m) == 'arm64' ]]; then

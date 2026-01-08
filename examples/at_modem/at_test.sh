@@ -36,6 +36,10 @@ expect "OK"
 # message queue
 send_string "AT+MSGQ=?\r"
 expect -re {OK\+MSGQ=[0-9]{1,3}\s+}
+# message queue status
+send_string "AT+MSGQS=?\r"
+expect -re {OK\+MSGQS=EMPTY\s+}
+
 # multiple commands
 send_string "AT+MSGQ=?\r\nAT\r\n"
 expect -re {OK\+MSGQ=[0-9]{1,3}\s+}
@@ -171,6 +175,15 @@ expect "FAIL+LOCATION=-900000001,1386086737"
 send_string "AT+LOCATION=-349205499,1800000001\r"
 expect "FAIL+LOCATION=-349205499,1800000001"
 set timeout 20
+# delete message from queue, no input, fail
+send_string "AT+MSGQD\r"
+expect "FAIL+MSGQD"
+# delete message from queue, invalid input, fail
+send_string "AT+MSGQD=-1\r"
+expect "FAIL+MSGQD"
+# delete message from queue, valid input, empty queue, fail
+send_string "AT+MSGQD=0\r"
+expect "FAIL+MSGQD"
 
 # schedule message, 40 hex characters
 send_string "AT+SMSG=0102030405060708091011121314151617181920\r"
@@ -178,6 +191,9 @@ expect "OK+SMSG=0102030405060708091011121314151617181920"
 sleep 2
 send_string "AT\r"
 expect "OK"
+# message queue status
+send_string "AT+MSGQS=?\r"
+expect -re {OK\+MSGQS=[0-9]+,[0-3]\s+}
 
 # schedule message, 42 hex characters
 send_user "user message 42 hex\r\n"
@@ -186,6 +202,15 @@ expect "OK+SMSG=010203040506070809101112131415161718192021"
 sleep 2
 send_string "AT\r"
 expect "OK"
+# message queue status, 2 messages status
+send_string "AT+MSGQS=?\r"
+expect -re {OK\+MSGQS=[0-9]+,[0-3],[0-9]+,[0-3]\s+}
+# delete message from queue, valid input, success
+send_string "AT+MSGQD=0\r"
+expect "OK+MSGQD"
+# message queue status, 1 message status
+send_string "AT+MSGQS=?\r"
+expect -re {OK\+MSGQS=[0-9]+,[0-3]\s+}
 
 # schedule message, 46 hex characters
 send_user "user message 46 hex\r\n"

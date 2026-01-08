@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -26,6 +26,7 @@ import time
 import struct
 import tempfile
 import platform
+import re
 from typing import Callable, List, Optional
 
 version = "1.4"
@@ -55,6 +56,10 @@ COMMAND_BOOT = b"b"
 COMMAND_VERSION = b"V"
 COMMAND_REGCODE = b"g"
 COMMAND_ID = b"i"
+
+
+RE_PATTERN_MODULE_ID = r"[\da-fA-F]{10}"
+RE_PATTERN_REGCODE = r"[\d\w]{25}"
 
 
 class MyriotaUSBDevice:
@@ -359,7 +364,7 @@ class MyriotaModuleUpdate:
                 # bootloader response invalid or still no response
                 continue
             else:
-                return out.decode("utf-8")
+                return out.decode("utf-8", errors="replace")
         raise TimeoutError(out)
 
     def capture_bootloader(self, port_name, br):
@@ -548,13 +553,29 @@ class MyriotaModuleUpdate:
 
     def get_id(self):
         try:
-            return self.execute_cmd_read(COMMAND_ID, max_retries=2)
+            pattern_match_retries = 3
+            id = ""
+            while not re.match(RE_PATTERN_MODULE_ID, id):
+                pattern_match_retries -= 1
+                if pattern_match_retries < 0:
+                    raise TimeoutError()
+                id = self.execute_cmd_read(COMMAND_ID, max_retries=2)
+                time.sleep(0.1)
+            return id
         except TimeoutError:
             raise RuntimeError("Failed to read ID")
 
     def get_regcode(self):
         try:
-            return self.execute_cmd_read(COMMAND_REGCODE, max_retries=2)
+            pattern_match_retries = 3
+            regcode = ""
+            while not re.match(RE_PATTERN_REGCODE, regcode):
+                pattern_match_retries -= 1
+                if pattern_match_retries < 0:
+                    raise TimeoutError()
+                regcode = self.execute_cmd_read(COMMAND_REGCODE, max_retries=2)
+                time.sleep(0.1)
+            return regcode
         except TimeoutError:
             raise RuntimeError("Failed to read regcode")
 
@@ -570,7 +591,7 @@ class MyriotaModuleUpdate:
         while True:
             out = self.serial_port.readline()
             if len(out) != 0:
-                self.module_output(out.decode("utf-8"), end="")
+                self.module_output(out.decode("utf-8", errors="ignore"), end="")
 
     def is_merged_binary(self, filename):
         # Let caller handle exceptions

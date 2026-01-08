@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.2.0
+
+API changes:
+
+- Updates `ScheduleMessage` API to return a message ID on success
+- Adds `MessageSlotsMax` API to return the maximum number of messages that the message queue can contain
+- Adds `MessageQueueStatus` API to retrieve the status of all messages currently in the queue
+- Adds `MessageQueueDelete` API to remove a specific message from the queue by its message ID
+
+Improvements:
+
+- Improves network performance
+- Reduces energy consumption
+- Adds support for u-blox M10 GNSS modules
+- Adds [AT client](examples/at_modem/at_client.py) in `at_modem` example to simulate the host controller behaviour
+- Adds [message_queue example application](examples/message_queue) demonstrating usage of the message queue APIs
+- Improves `log-util.py` with structured decoding and enhanced error handling
+- Updates supported platforms to include Ubuntu 24.04
+- Updates supported platforms to include macOS 26 (Tahoe)
+
+Other changes:
+
+- Drops installation support for Ubuntu 20.04
+- Drops installation support for macOS 15 (Sequoia) and earlier versions
+
 ## 2.1.0
 
 API changes:

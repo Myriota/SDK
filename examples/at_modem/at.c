@@ -112,8 +112,8 @@ void ATSend(const char *Tx) {
   UARTWrite(UartHandle, (uint8_t *)Tx, strlen(Tx));
 }
 
-void ATSetState(SysStates State) {
-  switch (State) {
+void ATSetState(SysStates St) {
+  switch (St) {
     case SYS_STATE_INIT:
       State = AT_STATE_INIT;
       break;
@@ -186,6 +186,40 @@ static void QuerySuspendModeHandler(uint32_t CmdId) {
   sprintf(tx_para, "%s", SuspendModeIsEnabled() ? "1" : "0");
   ATRespond(AT_RESP_OK_START, Queries[CmdId], tx_para);
   DEBUG_INFO("Suspend mode = %s\n", tx_para);
+}
+
+static void QueryMsgQueueStatusHandler(uint32_t CmdId) {
+  const int max_queue_len = MessageSlotsMax();
+  MessageStatus_t queue_status[max_queue_len];
+  memset(queue_status, 0, sizeof(queue_status));
+
+  const int count = MessageQueueStatus(queue_status, max_queue_len);
+  if (count < 0) {
+    // Invalid input
+    ATRespond(AT_RESP_FAIL_START, Queries[CmdId], NULL);
+    DEBUG_ERROR("MessageQueueStatus() returned error\n");
+    return;
+  }
+
+  if (count == 0) {
+    ATRespond(AT_RESP_OK_START, Queries[CmdId], "EMPTY");
+    DEBUG_INFO("Message queue status: EMPTY\n");
+    return;
+  }
+
+  // Format result into a single string: id,status,id,status,id,status
+  char tx_para[AT_MAX_PARA_LEN] = {0};
+  char entry[32];
+
+  for (int i = 0; i < count; i++) {
+    snprintf(entry, sizeof(entry), "%u,%u", queue_status[i].id,
+             queue_status[i].status);
+    strcat(tx_para, entry);
+    if (i < count - 1) strcat(tx_para, ",");
+  }
+
+  ATRespond(AT_RESP_OK_START, Queries[CmdId], tx_para);
+  DEBUG_INFO("Message queue status = %s\n", tx_para);
 }
 
 static void ControlSaveMsgHandler(uint32_t CmdId, const char *Para) {
@@ -434,6 +468,30 @@ static void ControlLocationHandler(uint32_t CmdId, const char *Para) {
   DEBUG_ERROR("Invalid format for location setting\n");
 }
 
+static void ControlMsgQueueDeleteHandler(uint32_t CmdId, const char *Para) {
+  if (Para == NULL || strlen(Para) == 0) {
+    ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
+    DEBUG_ERROR("Message delete requires a message ID\n");
+    return;
+  }
+
+  const int msg_id = atoi(Para);
+  if (msg_id < 0) {
+    ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
+    DEBUG_ERROR("Message ID invalid: %s\n", Para);
+    return;
+  }
+
+  // Attempt deletion
+  if (MessageQueueDelete((uint16_t)msg_id) == 0) {
+    ATRespond(AT_RESP_OK_START, Controls[CmdId], NULL);
+    DEBUG_INFO("Message deleted: %d\n", msg_id);
+  } else {
+    ATRespond(AT_RESP_FAIL_START, Controls[CmdId], Para);
+    DEBUG_ERROR("Message ID not found: %d\n", msg_id);
+  }
+}
+
 static const QueryHandler_t QueryHandlers[] = {
     {AT_QUERY_MSG_QUEUE, &QueryMsgQueueHandler},
     {AT_QUERY_STATE, &QueryStateHandler},
@@ -443,6 +501,7 @@ static const QueryHandler_t QueryHandlers[] = {
     {AT_QUERY_TIME, &QueryTimeHandler},
     {AT_QUERY_LOCATION, &QueryLocationHandler},
     {AT_QUERY_SUSPEND_MODE, &QuerySuspendModeHandler},
+    {AT_QUERY_MSG_QUEUE_STATUS, &QueryMsgQueueStatusHandler},
 };
 
 static const ControlHandler_t ControlHandlers[] = {
@@ -455,6 +514,7 @@ static const ControlHandler_t ControlHandlers[] = {
     {AT_CONTROL_SUSPEND_MODE, &ControlSuspendMode},
     {AT_CONTROL_TIME, &ControlTimeHandler},
     {AT_CONTROL_LOCATION, &ControlLocationHandler},
+    {AT_CONTROL_MSG_QUEUE_DELETE, &ControlMsgQueueDeleteHandler},
 };
 
 static void *GetHandlder(const char *CmdStr, const char *Strs[],

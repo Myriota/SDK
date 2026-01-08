@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -14,7 +14,6 @@
 # limitations under the License.
 
 
-from __future__ import print_function
 import sys
 import struct
 import time
@@ -23,6 +22,7 @@ import serial.tools.list_ports
 import argparse
 import binascii
 import signal
+import io
 
 errors = {
     0: "Internal test",
@@ -149,10 +149,8 @@ def detect_port():
     return get_ports().difference(existing_ports).pop()
 
 
-def dump_bytes(bytes):
-    for b in bytes:
-        print("%02x" % b, end=" ")
-    print("")
+def bytes_to_str(bytes):
+    return " ".join("%02x" % b for b in bytes)
 
 
 # Read number of bytes rounded to 4, and dump if readback is too short
@@ -160,83 +158,131 @@ def read_and_check_completion(file, length):
     # Round to 4 bytes boundary
     bytes = bytearray(file.read(int((length + 3) // 4 * 4)))
     if len(bytes) < length:
-        print("Incomplete log payload")
-        dump_bytes(bytes)
-        return None
+        error_str = "Incomplete log payload\n%s" % bytes_to_str(bytes)
+        raise ValueError(error_str)
     else:
         return bytes
 
 
-def decode_log(logfile):
-    with open(logfile, "rb") as binary_file:
-        # Entry format, in little endian
-        # |0-1|2-3|4-?|
-        # |Length|Code|Payload|
-        is_empty = True
-        while True:
-            bytes = binary_file.read(8)
-            if len(bytes) == 0:
-                is_empty = False
-                return is_empty
-            if len(bytes) < 8:
-                if not is_empty:
-                    print("Incomplete log entry")
-                binary_file.close()
-                return is_empty
-            timestamp = struct.unpack("<IHH", bytes)
-            timestamp, length, code = struct.unpack("<IHH", bytes)
-            # End of the log
-            if timestamp == 0xFFFFFFFF:
-                return is_empty
-            is_empty = False
-            # UTC time
-            time_string = time.strftime(
-                "%Y-%m-%d %H:%M:%S UTC", time.gmtime(float(timestamp))
-            )
-            try:
-                key = errors[code]
-                if length == 0:
-                    print("====%s %s====" % (time_string, key))
-                    continue
-                else:
+# Joins a list of strings, safely handling None values.
+# Ignores None values
+def join_optional(strings, separator=""):
+    return separator.join(str(s) for s in strings if s is not None)
+
+
+def append_newline(a, b):
+    return join_optional([a, b], separator="\n")
+
+
+def decode_log(logdata: bytearray):
+    """
+    Convert a binary log file into a list of:
+    {
+        "timestamp": ...
+        "key": ...
+        "detail": ...
+    }
+    """
+    records = []
+    binary_file = io.BytesIO(logdata)
+
+    # Entry format, in little endian
+    # |0-1|2-3|4-?|
+    # |Length|Code|Payload|
+    while True:
+        entry = {
+            "timestamp": None,
+            "key": None,
+            "detail": None,
+        }
+
+        bytes = binary_file.read(8)
+        if len(bytes) == 0:
+            return records
+
+        if len(bytes) < 8:
+            if len(bytes) > 0:
+                entry["detail"] = "Incomplete log entry"
+            return records
+        timestamp = struct.unpack("<IHH", bytes)
+        timestamp, length, code = struct.unpack("<IHH", bytes)
+        # End of the log
+        if timestamp == 0xFFFFFFFF:
+            return records
+        # UTC time
+        time_string = time.strftime(
+            "%Y-%m-%d %H:%M:%S UTC", time.gmtime(float(timestamp))
+        )
+        entry["timestamp"] = time_string
+        records.append(entry)
+        # try standard user codes:
+        try:
+            key = errors[code]
+            entry["key"] = key
+            if length == 0:
+                continue
+            else:
+                try:
                     bytes = read_and_check_completion(binary_file, length)
-                    if bytes is None:
-                        print("====%s %s====" % (time_string, key))
-                        return is_empty
-                    else:
-                        values = struct.unpack(unpack_strings[key], bytes)
-                        print("====%s %s====" % (time_string, key))
-                        for k, v in zip(contents[key], values):
-                            print("%s : 0x%08x(%d)" % (k, v, v))
-                        if key == "Reset reason":
-                            print("%s" % reset_reasons[values[0]])
-                        continue
-            except struct.error:
-                if code < 0x80:
-                    print("====%s %s====" % (time_string, key))
-                    print("Unable to decode")
-                    dump_bytes(bytes)
+                    values = struct.unpack(unpack_strings[key], bytes)
+                    for k, v in zip(contents[key], values):
+                        detail_str = "%s : 0x%08x(%d)" % (k, v, v)
+                        entry["detail"] = append_newline(entry["detail"], detail_str)
+                    if key == "Reset reason":
+                        detail_str = reset_reasons[values[0]]
+                        entry["detail"] = append_newline(entry["detail"], detail_str)
                     continue
-                else:
-                    binary_file.seek(-len(bytes), 1)
-            except KeyError:
-                pass
-            if code >= 0x80 and code <= 0x80 + 0xFF:
-                print("====%s User error code %d====" % (time_string, (code - 0x80)))
-                if length != 0:
-                    bytes = read_and_check_completion(binary_file, length)
-                    if bytes is None:
-                        return is_empty
-                    else:
-                        dump_bytes(bytes)
-                        continue
+                except ValueError as e:
+                    entry["detail"] = append_newline(entry["detail"], e)
+                    return records
+        except struct.error:
+            if code < 0x80:
+                error_str = "Unable to decode\n%s" % bytes_to_str(bytes)
+                entry["detail"] = append_newline(entry["detail"], error_str)
+                continue
+            else:
+                binary_file.seek(-len(bytes), 1)
+        except KeyError:
+            pass
+        # try user code:
+        if code >= 0x80 and code <= 0x80 + 0xFF:
+            entry["key"] = "User error code %d" % (code - 0x80)
             if length != 0:
-                print("====%s Unknown error code %d====" % (time_string, code))
+                try:
+                    bytes = read_and_check_completion(binary_file, length)
+                    entry["detail"] = append_newline(
+                        entry["detail"], bytes_to_str(bytes)
+                    )
+                    continue
+                except ValueError as e:
+                    entry["detail"] = append_newline(entry["detail"], e)
+                    return records
+        # unknown log code:
+        if length != 0:
+            entry["key"] = "Unknown error code %d" % code
+            try:
                 bytes = read_and_check_completion(binary_file, length)
-                if bytes is None:
-                    return is_empty
-                else:
-                    dump_bytes(bytes)
+                entry["detail"] = append_newline(entry["detail"], bytes_to_str(bytes))
+                continue
+            except ValueError as e:
+                entry["detail"] = append_newline(entry["detail"], e)
+                return records
+
+
+def log_to_string(log_detail):
+    string_lines = []
+    if log_detail:
+        for entry in log_detail:
+            timestamp = entry["timestamp"] if entry["timestamp"] else ""
+            key = entry["key"] if entry["key"] else ""
+            title = " ".join([timestamp, key]).strip()
+            string_lines.append("====%s====" % title)
+            if entry["detail"]:
+                string_lines.append(entry["detail"])
+    else:
+        string_lines.append("No log found")
+
+    return "\n".join(string_lines)
 
 
 def capture_bootloader(portname, baudrate, wait_flag):
@@ -451,9 +497,12 @@ def main():
                 binary_file.write(binascii.unhexlify(dump))
                 binary_file.close()
             infile = outfile
+
     print("Decoding", infile)
-    if decode_log(infile):
-        print("No log found")
+    with open(infile, "rb") as binary_file:
+        logfile_bytes = bytearray(binary_file.read())
+    log_data = decode_log(logfile_bytes)
+    print(log_to_string(log_data))
 
     if serial_port is not None:
         serial_port.close()

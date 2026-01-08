@@ -183,8 +183,7 @@ static bool RFTXTest() {
     PRINT("RF TX test failed\n");
   } else {
     uint32_t tick_start = TickGet();
-    while (TickGet() - tick_start < RF_TX_TEST_TIME * TICK_PER_SECOND)
-      ;
+    while (TickGet() - tick_start < RF_TX_TEST_TIME * TICK_PER_SECOND);
   }
   RFTestTxStop();
   PRINT("RF TX test stopped\n");

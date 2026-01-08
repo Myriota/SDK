@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+// Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 // SPDX-License-Identifier: BSD-3-Clause-Attribution
 //
 // This file is licensed under the BSD with attribution  (the "License"); you
@@ -113,7 +113,8 @@ int BoardBatteryVoltGet(uint32_t *mv) {
   GPIOSetHigh(ControlPin);
   Delay(SWITCH_SETTLE_TIME);
 
-  uint32_t batt = 0, volt = 0;
+  uint32_t volt = 0;
+  uint32_t batt = 0;
   for (unsigned i = 0; i < AVERAGE_COUNT; i++) {
     ADCReference Ref = ADC_REF_2V5;  // Battery voltage won't be higher than 5V
     if (ADCGetVoltage(ADCPin, Ref, &batt)) {
@@ -123,6 +124,7 @@ int BoardBatteryVoltGet(uint32_t *mv) {
       volt += batt;
     }
   }
+
   GPIOSetModeInput(ControlPin, GPIO_PULL_DOWN);
   *mv = volt / AVERAGE_COUNT;
   *mv *= 2;  // Divider on the development board

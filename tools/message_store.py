@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2020, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you

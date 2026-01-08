@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2016-2024, Myriota Pty Ltd, All Rights Reserved
+# Copyright (c) 2016-2025, Myriota Pty Ltd, All Rights Reserved
 # SPDX-License-Identifier: BSD-3-Clause-Attribution
 #
 # This file is licensed under the BSD with attribution  (the "License"); you
@@ -27,6 +27,7 @@ myriota_test() {
   )
 }
 
+source ~/.venvs/myriota_sdk/bin/activate
 myriota_test 'which make'
 myriota_test 'which python'
 myriota_test 'which pip || which pip3'
