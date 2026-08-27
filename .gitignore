@@ -3,3 +3,6 @@ map.out
 *.bin
 *.elf
 .git/*
+docs/output/*
+docs/*.dox
+docs/lib/

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.0
+
+API changes:
+- Added the ability to configure Parity, Stop and Data bit settings for UARTs via the `UARTOption` bitmask.
+  - Note: `UARTInit()` now validates the `UARTOption` bitmask and rejects unsupported settings at runtime.
+
+Other changes:
+- Added support for newer M2-24 modules which introduced changes to address component availability (M2-24-A).
+
 ## 2.2.0
 
 API changes:
