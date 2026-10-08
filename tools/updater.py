@@ -21,7 +21,6 @@ from serial.tools.list_ports_common import ListPortInfo
 import argparse
 import os
 import signal
-import sys
 import time
 import struct
 import tempfile
@@ -218,7 +217,7 @@ class MyriotaModuleUpdate:
             time.sleep(0.1)
             d.setBitMode(0, 0x20)
             d.close()
-        except (OSError, ImportError) as e:
+        except (OSError, ImportError):
             self.connect_msg("Please reset the device", end="")
             return
 
@@ -300,13 +299,16 @@ class MyriotaModuleUpdate:
             end="",
         )
         existing_ports = self.get_port_usable()
-        while len(self.get_port_usable().difference(existing_ports)) == 0:
-            existing_ports = self.get_port_usable()
+        while True:
             time.sleep(0.5)
+            current_ports = self.get_port_usable()
+            new_ports = current_ports.difference(existing_ports)
+            if new_ports:
+                break
+            existing_ports = current_ports
             self.connect_msg(".", end="")
         self.connect_msg("")
-        ret = self.get_port_usable().difference(existing_ports).pop()
-        return ret
+        return new_ports.pop()
 
     def open_serial_port(self, portname, baudrate):
         try:
@@ -509,7 +511,7 @@ class MyriotaModuleUpdate:
                     raise RuntimeError(
                         "partition error: Please confirm if correct system image has been programmed"
                     )
-            if b"Ready" in out and not b"Fail" in out:
+            if b"Ready" in out and b"Fail" not in out:
                 update_in_progress = True
                 if self._xmodem_send(stream, ncg):
                     stream.close()
@@ -604,7 +606,7 @@ class MyriotaModuleUpdate:
             while offset < totalsize:
                 input_file.seek(2, os.SEEK_CUR)
                 ftype = struct.unpack("<H", input_file.read(2))[0]
-                if not ftype in file_types:
+                if ftype not in file_types:
                     return False
 
                 flen = struct.unpack("<I", input_file.read(4))[0]

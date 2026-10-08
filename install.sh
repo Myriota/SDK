@@ -43,20 +43,19 @@ if [[ $OSTYPE == 'linux'* ]]; then
 elif [[ $OSTYPE == 'darwin'* ]]; then
   echo "SDK Installation on macOS"
 
+  if [[ $(uname -m) != 'arm64' ]]; then
+    echo "Only Apple silicon is supported on macOS, this is $(uname -m)" >&2
+    exit 1
+  fi
+
   # Myriota Development Board requirements
   python3 -m venv ~/.venvs/myriota_sdk
   source ~/.venvs/myriota_sdk/bin/activate
   pip3 install -r requirements.txt
 
   echo "Install ARM compiler"
-  if [[ $(uname -m) == 'arm64' ]]; then
-    curl -O https://downloads.myriota.com/arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
-    sudo mkdir -p ${CROSS_COMPILER_PATH}
-    sudo tar -xf arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz -C ${CROSS_COMPILER_PATH} --strip-components=1
-  else
-    curl -O https://downloads.myriota.com/arm-gnu-toolchain-13.2.rel1-darwin-x86_64-arm-none-eabi.tar.xz
-    sudo mkdir -p ${CROSS_COMPILER_PATH}
-    sudo tar -xf arm-gnu-toolchain-13.2.rel1-darwin-x86_64-arm-none-eabi.tar.xz -C ${CROSS_COMPILER_PATH} --strip-components=1
-  fi
+  curl -O https://downloads.myriota.com/arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
+  sudo mkdir -p ${CROSS_COMPILER_PATH}
+  sudo tar -xf arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz -C ${CROSS_COMPILER_PATH} --strip-components=1
 
 fi

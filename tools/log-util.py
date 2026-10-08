@@ -139,14 +139,20 @@ def detect_port():
         end="",
     )
     sys.stdout.flush()
+    # Take a single snapshot per poll; comparing against a separate later scan
+    # misses a port that appears in between and then waits forever
     existing_ports = get_ports()
-    while len(get_ports().difference(existing_ports)) == 0:
-        existing_ports = get_ports()
+    while True:
         time.sleep(0.5)
+        current_ports = get_ports()
+        new_ports = current_ports.difference(existing_ports)
+        if new_ports:
+            break
+        existing_ports = current_ports
         print(".", end="")
         sys.stdout.flush()
     print("")
-    return get_ports().difference(existing_ports).pop()
+    return new_ports.pop()
 
 
 def bytes_to_str(bytes):

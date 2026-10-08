@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.4.0
+
+Improvements:
+
+- Reduces energy consumption
+- Improves accuracy of time set from the network and GNSS
+- Fixes inaccurate wakeup times for short sleep intervals
+- Fixes `updater.py` and `log-util.py` occasionally hanging during serial port auto-detection
+- Updates `pyOpenSSL` and `requests` Python dependencies
+
+Other changes:
+
+- Builds user applications with the hard-float ABI (`-mfloat-abi=hard -mfpu=fpv4-sp-d16`), so any prebuilt objects or libraries must be rebuilt
+- Drops installation support for Intel-based macOS
+
 ## 2.3.0
 
 API changes:
